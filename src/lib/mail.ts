@@ -40,6 +40,31 @@ export interface SyncResult {
   threads: Record<string, Message[]>;
 }
 
+/**
+ * Hittar rätt mapp oavsett hur servern namnger den. En mapp du skapat som
+ * "Offerter" kan på servern heta "Offerter" eller "INBOX.Offerter" – detta
+ * matchar på både full sökväg och mappens namn så användaren slipper gissa.
+ */
+async function resolveMailbox(client: ImapFlow, wanted: string): Promise<string> {
+  if (!wanted || wanted.toUpperCase() === "INBOX") return "INBOX";
+  try {
+    const boxes = await client.list();
+    const target = wanted.toLowerCase();
+    // 1) Exakt sökväg
+    const exact = boxes.find((b) => b.path.toLowerCase() === target);
+    if (exact) return exact.path;
+    // 2) Mappens namn (sista delen av sökvägen)
+    const byName = boxes.find((b) => {
+      const leaf = b.path.split(b.delimiter || "/").pop() || b.path;
+      return leaf.toLowerCase() === target || (b.name || "").toLowerCase() === target;
+    });
+    if (byName) return byName.path;
+  } catch {
+    // faller tillbaka på det angivna namnet nedan
+  }
+  return wanted;
+}
+
 /** Ansluter, hämtar de senaste mejlen och klassificerar dem. */
 export async function fetchLeadsFromImap(config: MailConfig): Promise<SyncResult> {
   const client = new ImapFlow({
@@ -56,7 +81,8 @@ export async function fetchLeadsFromImap(config: MailConfig): Promise<SyncResult
   const threads: Record<string, Message[]> = {};
 
   await client.connect();
-  const lock = await client.getMailboxLock(config.mailbox);
+  const mailboxPath = await resolveMailbox(client, config.mailbox);
+  const lock = await client.getMailboxLock(mailboxPath);
   try {
     const total = client.mailbox && typeof client.mailbox !== "boolean"
       ? client.mailbox.exists
