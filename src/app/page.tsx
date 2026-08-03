@@ -455,7 +455,7 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
 
       {/* Tråd */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-5 thin-scroll">
-        <div className="mx-auto max-w-3xl space-y-4">
+        <div className="space-y-4">
           {messages.map((m) => (
             <MessageBubble key={m.id} message={m} lead={lead} />
           ))}
@@ -772,7 +772,7 @@ function Composer({ lead }: { lead: Lead }) {
 
   return (
     <div className="border-t border-slate-200 bg-white px-6 py-3">
-      <div className="mx-auto max-w-3xl rounded-xl border border-slate-200">
+      <div className="rounded-xl border border-slate-200">
         {/* Rubrikrad */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-100 px-4 py-2 text-sm">
           <span className="flex items-center gap-1 text-slate-500">
