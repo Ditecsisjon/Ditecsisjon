@@ -50,7 +50,7 @@ export default function InboxPage() {
     useLeads();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [filterKey, setFilterKey] = useState<string>("alla");
+  const [filterKey, setFilterKey] = useState<string>("affarer");
   const [filterOpen, setFilterOpen] = useState(false);
 
   const currentFilter = FILTERS.find((f) => f.key === filterKey) ?? FILTERS[1];
