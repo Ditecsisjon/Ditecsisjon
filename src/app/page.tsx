@@ -7,24 +7,38 @@ import {
   Paperclip,
   Plus,
   Star,
-  Flag,
   Archive,
-  MoreHorizontal,
-  UserPlus,
   ChevronDown,
   Smile,
   X,
   RefreshCw,
+  Bell,
+  History,
+  Wand2,
+  Phone,
+  MessageSquare,
+  Mail,
+  StickyNote,
 } from "lucide-react";
 import { useLeads } from "@/lib/store";
-import { type Category, type Lead, type Message } from "@/lib/types";
-import { formatDate, initials, avatarColor } from "@/lib/format";
+import {
+  HISTORY_LABELS,
+  type Category,
+  type HistoryEntry,
+  type HistoryType,
+  type Lead,
+  type Message,
+  type ReminderConfig,
+} from "@/lib/types";
+import { formatDate, formatRelativeTime, initials, avatarColor } from "@/lib/format";
 import {
   findRegnrInText,
   isValidRegnr,
   normalizeRegnr,
   type VehicleInfo,
 } from "@/lib/vehicle";
+import { leadKey } from "@/lib/leadMeta";
+import { suggestReply, defaultReminderText } from "@/lib/suggest";
 import { Loading } from "@/components/ui";
 
 const INTENT_PHRASE: Record<Category, string> = {
@@ -65,7 +79,7 @@ export default function InboxPage() {
     return sorted.filter((l) => {
       if (!currentFilter.test(l)) return false;
       if (!q) return true;
-      return `${l.from} ${l.subject} ${l.body} ${l.service ?? ""} ${l.regnr ?? ""}`
+      return `${l.from} ${l.email} ${l.subject} ${l.body} ${l.service ?? ""} ${l.regnr ?? ""}`
         .toLowerCase()
         .includes(q);
     });
@@ -101,7 +115,7 @@ export default function InboxPage() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Sök konversation…"
+                placeholder="Sök regnr, namn, e-post…"
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm focus:border-brand-500 focus:bg-white focus:outline-none"
               />
             </div>
@@ -331,6 +345,12 @@ function ConversationItem({
 
 function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { history, reminders, addHistory, setReminder } = useLeads();
+  const [panel, setPanel] = useState<null | "historik" | "paminnelse">(null);
+
+  const key = leadKey(lead);
+  const entries = history[key] ?? [];
+  const reminder = reminders[key];
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -350,17 +370,31 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
           </div>
           <div>
             <div className="font-semibold text-slate-900">{lead.from}</div>
-            <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600">
-              Tilldela ditt team <ChevronDown size={13} />
-            </button>
+            <span className="text-xs text-slate-400">{lead.email}</span>
           </div>
         </div>
-        <div className="flex items-center gap-1 text-slate-400">
-          <IconBtn title="Kontakt">
-            <UserPlus size={18} />
+        <div className="relative flex items-center gap-1 text-slate-400">
+          <IconBtn
+            title="Statushistorik – hur ärendet hanterats"
+            active={panel === "historik"}
+            onClick={() => setPanel((p) => (p === "historik" ? null : "historik"))}
+          >
+            <History size={18} />
+            {entries.length ? (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-slate-500 px-1 text-[9px] font-semibold text-white">
+                {entries.length}
+              </span>
+            ) : null}
           </IconBtn>
-          <IconBtn title="Flagga">
-            <Flag size={18} />
+          <IconBtn
+            title="Automatisk påminnelse"
+            active={panel === "paminnelse"}
+            onClick={() => setPanel((p) => (p === "paminnelse" ? null : "paminnelse"))}
+          >
+            <Bell size={18} />
+            {reminder?.enabled ? (
+              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-emerald-500" />
+            ) : null}
           </IconBtn>
           <IconBtn title="Stjärnmärk">
             <Star size={18} />
@@ -368,9 +402,25 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
           <IconBtn title="Arkivera">
             <Archive size={18} />
           </IconBtn>
-          <IconBtn title="Mer">
-            <MoreHorizontal size={18} />
-          </IconBtn>
+
+          {panel === "historik" ? (
+            <HistoryPanel
+              entries={entries}
+              onAdd={(type, text) => addHistory(key, type, text)}
+              onClose={() => setPanel(null)}
+            />
+          ) : null}
+          {panel === "paminnelse" ? (
+            <ReminderPanel
+              lead={lead}
+              reminder={reminder}
+              onSave={(cfg) => {
+                setReminder(key, cfg);
+                setPanel(null);
+              }}
+              onClose={() => setPanel(null)}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -389,14 +439,223 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
   );
 }
 
-function IconBtn({ children, title }: { children: React.ReactNode; title: string }) {
+function IconBtn({
+  children,
+  title,
+  onClick,
+  active,
+}: {
+  children: React.ReactNode;
+  title: string;
+  onClick?: () => void;
+  active?: boolean;
+}) {
   return (
     <button
       title={title}
-      className="rounded-lg p-2 hover:bg-slate-100 hover:text-slate-600"
+      onClick={onClick}
+      className={`relative rounded-lg p-2 hover:bg-slate-100 hover:text-slate-600 ${
+        active ? "bg-slate-100 text-slate-700" : ""
+      }`}
     >
       {children}
     </button>
+  );
+}
+
+const HISTORY_ICON: Record<HistoryType, typeof Phone> = {
+  ringt: Phone,
+  sms: MessageSquare,
+  mejl: Mail,
+  anteckning: StickyNote,
+  status: Check,
+};
+
+function HistoryPanel({
+  entries,
+  onAdd,
+  onClose,
+}: {
+  entries: HistoryEntry[];
+  onAdd: (type: HistoryType, text: string) => void;
+  onClose: () => void;
+}) {
+  const [note, setNote] = useState("");
+  const quick: { type: HistoryType; label: string; icon: typeof Phone; text: string }[] = [
+    { type: "ringt", label: "Ringt upp", icon: Phone, text: "Ringde upp kunden" },
+    { type: "sms", label: "SMS", icon: MessageSquare, text: "Skickade SMS" },
+    { type: "mejl", label: "Mejl", icon: Mail, text: "Kontaktade via mejl" },
+  ];
+
+  return (
+    <>
+      <div className="fixed inset-0 z-20" onClick={onClose} />
+      <div className="absolute right-0 top-11 z-30 w-80 rounded-xl border border-slate-200 bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
+          <span className="text-sm font-semibold text-slate-700">Status &amp; historik</span>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="border-b border-slate-100 p-3">
+          <div className="mb-2 flex gap-1.5">
+            {quick.map((q) => (
+              <button
+                key={q.type}
+                onClick={() => onAdd(q.type, q.text)}
+                className="flex flex-1 flex-col items-center gap-1 rounded-lg border border-slate-200 py-2 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+              >
+                <q.icon size={16} /> {q.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && note.trim()) {
+                  onAdd("anteckning", note.trim());
+                  setNote("");
+                }
+              }}
+              placeholder="Skriv en anteckning…"
+              className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-500 focus:outline-none"
+            />
+            <button
+              onClick={() => {
+                if (note.trim()) {
+                  onAdd("anteckning", note.trim());
+                  setNote("");
+                }
+              }}
+              className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-900"
+            >
+              Lägg till
+            </button>
+          </div>
+        </div>
+
+        <div className="max-h-72 overflow-y-auto thin-scroll p-3">
+          {entries.length ? (
+            <ol className="space-y-3">
+              {entries.map((e) => {
+                const Icon = HISTORY_ICON[e.type];
+                return (
+                  <li key={e.id} className="flex gap-2.5">
+                    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                      <Icon size={13} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm text-slate-800">{e.text}</div>
+                      <div className="text-[11px] text-slate-400">
+                        {HISTORY_LABELS[e.type]} · {formatRelativeTime(e.at)}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <p className="py-4 text-center text-xs text-slate-400">
+              Ingen historik än. Logga första kontakten ovan.
+            </p>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ReminderPanel({
+  lead,
+  reminder,
+  onSave,
+  onClose,
+}: {
+  lead: Lead;
+  reminder?: ReminderConfig;
+  onSave: (cfg: ReminderConfig) => void;
+  onClose: () => void;
+}) {
+  const [enabled, setEnabled] = useState(reminder?.enabled ?? false);
+  const [days, setDays] = useState(reminder?.daysAfter ?? 3);
+  const [text, setText] = useState(reminder?.text ?? defaultReminderText(lead));
+
+  return (
+    <>
+      <div className="fixed inset-0 z-20" onClick={onClose} />
+      <div className="absolute right-0 top-11 z-30 w-96 rounded-xl border border-slate-200 bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
+          <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+            <Bell size={15} /> Automatisk påminnelse
+          </span>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="space-y-3 p-4">
+          <label className="flex items-center gap-2.5 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => setEnabled(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            Aktivera automatisk påminnelse för denna offert
+          </label>
+
+          <div className="flex items-center gap-2 text-sm text-slate-700">
+            Skicka efter
+            <input
+              type="number"
+              min={1}
+              max={60}
+              value={days}
+              onChange={(e) => setDays(Math.max(1, Number(e.target.value) || 1))}
+              className="w-16 rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-brand-500 focus:outline-none"
+            />
+            dagar utan svar
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-500">
+              Meddelande (egen text)
+            </label>
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={7}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm leading-relaxed focus:border-brand-500 focus:outline-none"
+            />
+          </div>
+
+          <p className="text-[11px] text-slate-400">
+            Skickas automatiskt en gång när offerten varit obesvarad angivet antal dagar
+            (medan appen är igång och e-post är kopplad).
+          </p>
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={onClose}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50"
+            >
+              Avbryt
+            </button>
+            <button
+              onClick={() =>
+                onSave({ enabled, daysAfter: days, text, lastSentAt: reminder?.lastSentAt })
+              }
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+            >
+              Spara
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -538,6 +797,13 @@ function Composer({ lead }: { lead: Lead }) {
         {/* Verktygsrad */}
         <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2">
           <div className="flex items-center gap-1 text-slate-400">
+            <button
+              title="Förslag på svarstext"
+              onClick={() => setBody(suggestReply(lead))}
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50"
+            >
+              <Wand2 size={17} /> Förslag
+            </button>
             <IconBtn title="Lägg till">
               <Plus size={18} />
             </IconBtn>

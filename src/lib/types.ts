@@ -67,6 +67,37 @@ export interface Message {
   attachments?: string[];
 }
 
+/** Typ av händelse i statushistoriken */
+export type HistoryType = "ringt" | "sms" | "mejl" | "anteckning" | "status";
+
+/** En rad i statushistoriken för hur en offertförfrågan hanterats */
+export interface HistoryEntry {
+  id: string;
+  type: HistoryType;
+  text: string;
+  /** ISO-datum */
+  at: string;
+}
+
+/** Inställning för automatisk påminnelse på en offert */
+export interface ReminderConfig {
+  enabled: boolean;
+  /** Antal dagar efter offert/senaste kontakt innan påminnelsen skickas */
+  daysAfter: number;
+  /** Egen text som skickas som påminnelse */
+  text: string;
+  /** ISO-datum då påminnelsen senast skickades (för att undvika dubbletter) */
+  lastSentAt?: string;
+}
+
+export const HISTORY_LABELS: Record<HistoryType, string> = {
+  ringt: "Ringt upp",
+  sms: "SMS",
+  mejl: "Mejl",
+  anteckning: "Anteckning",
+  status: "Status",
+};
+
 export const CATEGORY_LABELS: Record<Category, string> = {
   offert: "Offertförfrågan",
   bokning: "Direktbokning",

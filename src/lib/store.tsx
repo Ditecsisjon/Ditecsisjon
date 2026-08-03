@@ -10,11 +10,31 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import type { Lead, Message, Status } from "./types";
+import type {
+  HistoryEntry,
+  HistoryType,
+  Lead,
+  Message,
+  ReminderConfig,
+  Status,
+} from "./types";
 import { generateLeads } from "./sample-data";
+import { leadKey } from "./leadMeta";
+
+const HISTORY_LS_KEY = "ditec:history";
+const REMINDER_LS_KEY = "ditec:reminders";
+
+function newId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+  }
+}
 
 interface LeadsContextValue {
   leads: Lead[];
@@ -26,12 +46,18 @@ interface LeadsContextValue {
   syncing: boolean;
   /** Senaste status/felmeddelande från mejlhämtningen */
   mailStatus: string | null;
+  /** Statushistorik per ärende (nyckel = leadKey) */
+  history: Record<string, HistoryEntry[]>;
+  /** Automatiska påminnelser per ärende (nyckel = leadKey) */
+  reminders: Record<string, ReminderConfig>;
   updateStatus: (id: string, status: Status) => void;
   markFollowUpSent: (id: string) => void;
   markAnswered: (id: string) => void;
   markRead: (id: string) => void;
   sendMessage: (id: string, body: string, attachments?: string[]) => void;
   syncFromMail: () => Promise<void>;
+  addHistory: (key: string, type: HistoryType, text: string) => void;
+  setReminder: (key: string, config: ReminderConfig) => void;
 }
 
 const LeadsContext = createContext<LeadsContextValue | null>(null);
@@ -71,6 +97,46 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   const [source, setSource] = useState<"demo" | "mail">("demo");
   const [syncing, setSyncing] = useState(false);
   const [mailStatus, setMailStatus] = useState<string | null>(null);
+  const [history, setHistory] = useState<Record<string, HistoryEntry[]>>({});
+  const [reminders, setReminders] = useState<Record<string, ReminderConfig>>({});
+
+  // Ladda sparad historik/påminnelser (överlever omstart via localStorage)
+  useEffect(() => {
+    try {
+      const h = localStorage.getItem(HISTORY_LS_KEY);
+      if (h) setHistory(JSON.parse(h));
+      const r = localStorage.getItem(REMINDER_LS_KEY);
+      if (r) setReminders(JSON.parse(r));
+    } catch {
+      /* ignorera trasig localStorage */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(HISTORY_LS_KEY, JSON.stringify(history));
+    } catch {
+      /* full/blockerad localStorage – ignorera */
+    }
+  }, [history]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(REMINDER_LS_KEY, JSON.stringify(reminders));
+    } catch {
+      /* ignorera */
+    }
+  }, [reminders]);
+
+  function addHistoryEntry(key: string, type: HistoryType, text: string) {
+    setHistory((prev) => ({
+      ...prev,
+      [key]: [
+        { id: newId(), type, text, at: new Date().toISOString() },
+        ...(prev[key] ?? []),
+      ],
+    }));
+  }
 
   async function syncFromMail() {
     setSyncing(true);
@@ -117,6 +183,59 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Auto-skicka förfallna påminnelser (endast skarpt läge med riktig brevlåda)
+  const processingRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (source !== "mail" || !loaded) return;
+    (async () => {
+      for (const lead of leads) {
+        const key = leadKey(lead);
+        const r = reminders[key];
+        if (!r?.enabled || processingRef.current.has(key)) continue;
+        // Bara obesvarade/skickade offerter – inte bokade eller avslutade
+        if (!["ny", "obesvarad", "besvarad", "offert_skickad"].includes(lead.status)) continue;
+        const base = lead.quoteSentAt || lead.lastContactAt || lead.receivedAt;
+        const dueAt = new Date(base);
+        dueAt.setDate(dueAt.getDate() + (r.daysAfter || 3));
+        if (Date.now() < dueAt.getTime()) continue;
+        if (r.lastSentAt && new Date(r.lastSentAt).getTime() >= dueAt.getTime()) continue;
+
+        processingRef.current.add(key);
+        try {
+          const res = await fetch("/api/mail/send", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              to: lead.email,
+              subject: `Påminnelse: ${lead.subject}`,
+              body: r.text,
+            }),
+          });
+          const data = await res.json();
+          if (data.sent) {
+            addHistoryEntry(key, "mejl", "Automatisk påminnelse skickad");
+            setReminders((prev) => ({
+              ...prev,
+              [key]: { ...prev[key], lastSentAt: new Date().toISOString() },
+            }));
+            setLeads((prev) =>
+              prev.map((l) =>
+                l.id === lead.id
+                  ? { ...l, lastContactAt: new Date().toISOString(), followUpsSent: l.followUpsSent + 1 }
+                  : l
+              )
+            );
+          } else {
+            processingRef.current.delete(key); // ej skickat (t.ex. SMTP saknas) – försök igen senare
+          }
+        } catch {
+          processingRef.current.delete(key);
+        }
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, loaded, leads, reminders]);
+
   const value = useMemo<LeadsContextValue>(
     () => ({
       leads,
@@ -125,7 +244,12 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       source,
       syncing,
       mailStatus,
+      history,
+      reminders,
       syncFromMail,
+      addHistory: addHistoryEntry,
+      setReminder: (key, config) =>
+        setReminders((prev) => ({ ...prev, [key]: config })),
       updateStatus: (id, status) =>
         setLeads((prev) =>
           prev.map((l) =>
@@ -185,10 +309,16 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
               : l
           )
         );
+        // Logga i statushistoriken
+        const lead = leads.find((l) => l.id === id);
+        if (lead) {
+          const snippet = body.replace(/\s+/g, " ").slice(0, 60);
+          addHistoryEntry(leadKey(lead), "mejl", snippet ? `Mejl skickat: ${snippet}…` : "Mejl skickat");
+        }
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [leads, threads, loaded, source, syncing, mailStatus]
+    [leads, threads, loaded, source, syncing, mailStatus, history, reminders]
   );
 
   return <LeadsContext.Provider value={value}>{children}</LeadsContext.Provider>;
