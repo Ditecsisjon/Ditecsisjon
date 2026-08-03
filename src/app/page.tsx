@@ -21,6 +21,7 @@ import {
   StickyNote,
   CircleCheck,
   MailOpen,
+  Calculator,
 } from "lucide-react";
 import { useLeads } from "@/lib/store";
 import {
@@ -41,6 +42,16 @@ import {
 } from "@/lib/vehicle";
 import { leadKey, customerResponded } from "@/lib/leadMeta";
 import { suggestReply, defaultReminderText } from "@/lib/suggest";
+import {
+  TREATMENTS,
+  SIZE_ORDER,
+  SIZE_LABEL,
+  SIZE_EXAMPLE,
+  sizeFromLengthMm,
+  suggestedTreatmentKeys,
+  formatAmount as formatSek,
+  type CarSize,
+} from "@/lib/pricing";
 import { Loading } from "@/components/ui";
 
 const INTENT_PHRASE: Record<Category, string> = {
@@ -384,7 +395,8 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
   const scrollRef = useRef<HTMLDivElement>(null);
   const { history, reminders, handled, addHistory, setReminder, toggleHandled, markUnread } =
     useLeads();
-  const [panel, setPanel] = useState<null | "historik" | "paminnelse">(null);
+  const [panel, setPanel] = useState<null | "historik" | "paminnelse" | "pris">(null);
+  const [reply, setReply] = useState("");
 
   const key = leadKey(lead);
   const entries = history[key] ?? [];
@@ -419,6 +431,13 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
                 {entries.length}
               </span>
             ) : null}
+          </IconBtn>
+          <IconBtn
+            title="Priskonfigurator – förslag & pris efter bilstorlek"
+            active={panel === "pris"}
+            onClick={() => setPanel((p) => (p === "pris" ? null : "pris"))}
+          >
+            <Calculator size={18} />
           </IconBtn>
           <IconBtn
             title="Automatisk påminnelse"
@@ -469,6 +488,16 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
               onClose={() => setPanel(null)}
             />
           ) : null}
+          {panel === "pris" ? (
+            <PriceConfigurator
+              lead={lead}
+              onInsert={(text) => {
+                setReply((p) => (p ? `${p}\n\n${text}` : text));
+                setPanel(null);
+              }}
+              onClose={() => setPanel(null)}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -482,7 +511,7 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
       </div>
 
       {/* Skrivruta */}
-      <Composer lead={lead} />
+      <Composer lead={lead} body={reply} setBody={setReply} />
     </div>
   );
 }
@@ -707,6 +736,154 @@ function ReminderPanel({
   );
 }
 
+function PriceConfigurator({
+  lead,
+  onInsert,
+  onClose,
+}: {
+  lead: Lead;
+  onInsert: (text: string) => void;
+  onClose: () => void;
+}) {
+  const regnr = lead.regnr ?? findRegnrInText(lead.body) ?? "";
+  const [size, setSize] = useState<CarSize>("mellan");
+  const [autoSize, setAutoSize] = useState(true);
+  const [vehicle, setVehicle] = useState<VehicleInfo | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(suggestedTreatmentKeys(lead))
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!regnr || !isValidRegnr(regnr)) return;
+    setLoading(true);
+    fetch(`/api/vehicle?regnr=${encodeURIComponent(normalizeRegnr(regnr))}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && !d.error) {
+          setVehicle(d as VehicleInfo);
+          if (autoSize) setSize(sizeFromLengthMm((d as VehicleInfo).lengthMm));
+        }
+      })
+      .catch(() => {})
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function toggle(k: string) {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(k)) n.delete(k);
+      else n.add(k);
+      return n;
+    });
+  }
+
+  const chosen = TREATMENTS.filter((t) => selected.has(t.key));
+  const total = chosen.reduce((s, t) => s + t.prices[size], 0);
+
+  function insert() {
+    const carLine = vehicle ? `${vehicle.brand} ${vehicle.model}` : "din bil";
+    const lines = chosen.map((t) => `• ${t.name} – ${formatSek(t.prices[size])}`).join("\n");
+    const text = `Prisförslag för ${carLine} (storlek: ${SIZE_LABEL[size]}):\n${lines}\n\nTotalt: ${formatSek(
+      total
+    )}\n\nPriserna är preliminära och kan justeras något efter bilens skick. Välkommen att boka en tid!`;
+    onInsert(text);
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-20" onClick={onClose} />
+      <div className="absolute right-0 top-11 z-30 w-96 rounded-xl border border-slate-200 bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
+          <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+            <Calculator size={15} /> Priskonfigurator
+          </span>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Bil + storlek */}
+        <div className="border-b border-slate-100 p-3">
+          <div className="mb-1 text-xs text-slate-500">
+            {loading
+              ? "Hämtar bilstorlek…"
+              : vehicle
+              ? `${vehicle.brand} ${vehicle.model}${
+                  vehicle.lengthMm ? ` · ${vehicle.lengthMm} mm` : ""
+                }`
+              : "Ingen bil kopplad – välj storlek manuellt"}
+          </div>
+          <select
+            value={size}
+            onChange={(e) => {
+              setSize(e.target.value as CarSize);
+              setAutoSize(false);
+            }}
+            className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-500 focus:outline-none"
+          >
+            {SIZE_ORDER.map((s) => (
+              <option key={s} value={s}>
+                {SIZE_LABEL[s]} ({SIZE_EXAMPLE[s]})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Behandlingar */}
+        <div className="max-h-72 overflow-y-auto thin-scroll p-2">
+          {TREATMENTS.map((t) => {
+            const on = selected.has(t.key);
+            return (
+              <label
+                key={t.key}
+                className={`flex cursor-pointer items-start gap-2.5 rounded-lg px-2 py-2 ${
+                  on ? "bg-brand-50" : "hover:bg-slate-50"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={on}
+                  onChange={() => toggle(t.key)}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-slate-800">{t.name}</span>
+                    <span className="shrink-0 text-sm font-semibold text-slate-900">
+                      {formatSek(t.prices[size])}
+                    </span>
+                  </span>
+                  <span className="text-[11px] text-slate-400">{t.description}</span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+
+        {/* Summa + infoga */}
+        <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
+          <span className="text-sm text-slate-500">
+            Totalt: <span className="font-semibold text-slate-900">{formatSek(total)}</span>
+          </span>
+          <button
+            onClick={insert}
+            disabled={chosen.length === 0}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-40"
+          >
+            Infoga i svaret
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function MessageBubble({ message, lead }: { message: Message; lead: Lead }) {
   const isOut = message.direction === "out";
   return (
@@ -743,10 +920,17 @@ function MessageBubble({ message, lead }: { message: Message; lead: Lead }) {
 
 // --- Skrivruta med bifogning ------------------------------------------------
 
-function Composer({ lead }: { lead: Lead }) {
+function Composer({
+  lead,
+  body,
+  setBody,
+}: {
+  lead: Lead;
+  body: string;
+  setBody: React.Dispatch<React.SetStateAction<string>>;
+}) {
   const { sendMessage } = useLeads();
   const [subject, setSubject] = useState(`Re: ${lead.subject}`);
-  const [body, setBody] = useState("");
   const [files, setFiles] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
