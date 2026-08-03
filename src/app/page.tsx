@@ -34,11 +34,26 @@ const INTENT_PHRASE: Record<Category, string> = {
   ovrigt: "övrigt",
 };
 
+// Filter för konversationslistan – låter dig fokusera på affärer och gömma brus.
+const FILTERS: { key: string; label: string; test: (l: Lead) => boolean }[] = [
+  { key: "affarer", label: "Affärer (dölj övrigt)", test: (l) => l.category !== "ovrigt" },
+  { key: "alla", label: "Alla konversationer", test: () => true },
+  { key: "obesvarade", label: "Obesvarade", test: (l) => l.status === "ny" || l.status === "obesvarad" },
+  { key: "offert", label: "Offerter", test: (l) => l.category === "offert" },
+  { key: "bokning", label: "Bokningar", test: (l) => l.category === "bokning" },
+  { key: "konsultation", label: "Konsultation", test: (l) => l.category === "konsultation" },
+  { key: "ovrigt", label: "Endast övrigt", test: (l) => l.category === "ovrigt" },
+];
+
 export default function InboxPage() {
   const { leads, threads, loaded, markRead, syncFromMail, syncing, source, mailStatus } =
     useLeads();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [filterKey, setFilterKey] = useState<string>("alla");
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const currentFilter = FILTERS.find((f) => f.key === filterKey) ?? FILTERS[1];
 
   const sorted = useMemo(
     () => [...leads].sort((a, b) => +new Date(b.receivedAt) - +new Date(a.receivedAt)),
@@ -46,14 +61,15 @@ export default function InboxPage() {
   );
 
   const filtered = useMemo(() => {
-    if (!query) return sorted;
     const q = query.toLowerCase();
-    return sorted.filter((l) =>
-      `${l.from} ${l.subject} ${l.body} ${l.service ?? ""} ${l.regnr ?? ""}`
+    return sorted.filter((l) => {
+      if (!currentFilter.test(l)) return false;
+      if (!q) return true;
+      return `${l.from} ${l.subject} ${l.body} ${l.service ?? ""} ${l.regnr ?? ""}`
         .toLowerCase()
-        .includes(q)
-    );
-  }, [sorted, query]);
+        .includes(q);
+    });
+  }, [sorted, query, currentFilter]);
 
   // Välj första konversationen som standard
   useEffect(() => {
@@ -91,10 +107,19 @@ export default function InboxPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700">
-            <input type="checkbox" className="h-4 w-4 rounded border-slate-300" readOnly />
-            Alla konversationer
-            <ChevronDown size={15} className="text-slate-400" />
+          <div className="relative flex items-center gap-2 border-b border-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700">
+            <button
+              onClick={() => setFilterOpen((v) => !v)}
+              className="flex items-center gap-1.5 rounded-lg px-1 py-0.5 hover:bg-slate-100"
+            >
+              {currentFilter.label}
+              <ChevronDown size={15} className="text-slate-400" />
+            </button>
+            {filterKey !== "alla" ? (
+              <span className="rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
+                {filtered.length}
+              </span>
+            ) : null}
             <button
               onClick={() => syncFromMail()}
               disabled={syncing}
@@ -107,6 +132,33 @@ export default function InboxPage() {
             >
               <RefreshCw size={16} className={syncing ? "animate-spin" : ""} />
             </button>
+
+            {filterOpen ? (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setFilterOpen(false)} />
+                <div className="absolute left-3 top-11 z-20 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                  {FILTERS.map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => {
+                        setFilterKey(f.key);
+                        setFilterOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between px-4 py-2 text-left text-sm ${
+                        f.key === filterKey
+                          ? "bg-brand-50 text-brand-700"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {f.label}
+                      <span className="text-xs text-slate-400">
+                        {leads.filter(f.test).length}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : null}
           </div>
           {mailStatus ? (
             <div

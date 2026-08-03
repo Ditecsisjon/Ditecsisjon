@@ -25,7 +25,7 @@ export function readMailConfig(): MailConfig | null {
   const pass = process.env.IMAP_PASSWORD;
   if (!user || !pass) return null;
   return {
-    host: process.env.IMAP_HOST || "imap.gmail.com",
+    host: process.env.IMAP_HOST || "imap.websupport.se",
     port: Number(process.env.IMAP_PORT || 993),
     secure: (process.env.IMAP_SECURE ?? "true") !== "false",
     user,

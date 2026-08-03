@@ -86,47 +86,49 @@ Testa fordonsuppslaget:
 curl "http://localhost:3000/api/vehicle?regnr=JHK427"
 ```
 
-## Koppla din Gmail (offert.ditec@gmail.com)
+## Koppla din brevlåda (info@ditecsisjon.se)
 
-Appen hämtar och skickar mejl direkt via Gmails IMAP/SMTP med ett **app-lösenord**
-– enklare än OAuth och kräver inget Google Cloud-projekt.
+Leads (Eniro, offerter) kommer till `info@ditecsisjon.se` hos Websupport, så
+appen kopplas dit via IMAP/SMTP – standardprotokoll, ingen OAuth krävs.
 
-1. Slå på **2-stegsverifiering**: <https://myaccount.google.com/security>
-2. Skapa ett **app-lösenord** (16 tecken): <https://myaccount.google.com/apppasswords>
-3. Kopiera `.env.example` till `.env.local` och fyll i app-lösenordet:
+1. Kopiera `.env.example` till `.env.local` och fyll i lösenordet till brevlådan:
    ```
-   IMAP_HOST=imap.gmail.com
+   IMAP_HOST=imap.websupport.se
    IMAP_PORT=993
    IMAP_SECURE=true
-   IMAP_USER=offert.ditec@gmail.com
-   IMAP_PASSWORD=app-lösenordet-16-tecken
+   IMAP_USER=info@ditecsisjon.se
+   IMAP_PASSWORD=ditt-lösenord
    IMAP_MAILBOX=INBOX
-   MAIL_FETCH_LIMIT=40
+   MAIL_FETCH_LIMIT=60
 
-   SMTP_HOST=smtp.gmail.com
+   SMTP_HOST=smtp.websupport.se
    SMTP_PORT=465
    SMTP_SECURE=true
-   SMTP_FROM=offert.ditec@gmail.com
+   SMTP_FROM=info@ditecsisjon.se
    ```
-4. Starta om appen (`npm run dev`). Inkorgen hämtar de senaste mejlen automatiskt
-   vid start; uppdatera manuellt med ↻-knappen bredvid "Alla konversationer".
+2. Starta om appen (`npm run dev`). Inkorgen hämtar de senaste mejlen automatiskt
+   vid start; uppdatera manuellt med ↻-knappen bredvid filtermenyn.
 
 Varje inkommet mejl körs genom kategoriseringen (offert/bokning/konsultation/
 övrigt) och regnummer plockas automatiskt ur texten för fordonsuppslaget. Svar
-och uppföljningar skickas via samma app-lösenord (SMTP). Utan konfiguration
-körs appen i demoläge med exempeldata.
+och uppföljningar skickas via SMTP. Utan konfiguration körs appen i demoläge.
 
-**Säkerhet:** `.env.local` är gitignore:at – app-lösenordet hamnar aldrig i
-koden och kan återkallas när som helst på apppasswords-sidan. IMAP/SMTP sker på
-serversidan, så kör appen som en riktig server (inte statisk sajt). Se
-`src/lib/mail.ts`, `src/lib/mailer.ts` och `src/app/api/mail/*`.
+**Hantera brus:** en `info@`-adress får mycket annan post. Använd filtermenyn
+uppe till vänster ("Affärer (dölj övrigt)") för att bara visa affärer. Vill du
+filtrera redan i brevlådan – sortera leads till en mapp och sätt
+`IMAP_MAILBOX=Offerter`, så läser appen bara den mappen.
+
+**Säkerhet:** `.env.local` är gitignore:at – lösenordet hamnar aldrig i koden.
+IMAP/SMTP sker på serversidan, så kör appen som en riktig server (inte statisk
+sajt). Se `src/lib/mail.ts`, `src/lib/mailer.ts` och `src/app/api/mail/*`.
 
 > **Ny på Windows?** Följ den enkla steg-för-steg-guiden i **[SETUP.md](SETUP.md)**
 > – dubbelklicka på `start.bat` så installeras och startas allt automatiskt.
 
-> **Alternativ – Websupport eller annan e-post:** appen fungerar med vilken
-> IMAP/SMTP-brevlåda som helst. Byt bara `IMAP_HOST`/`SMTP_HOST` (t.ex.
-> `imap.websupport.se` / `smtp.websupport.se`) och använd brevlådans lösenord.
+> **Vill du använda Gmail (offert.ditec@gmail.com) i stället?** Byt till
+> `IMAP_HOST=imap.gmail.com` / `SMTP_HOST=smtp.gmail.com` och använd ett
+> **app-lösenord** (<https://myaccount.google.com/apppasswords>, kräver 2-stegs-
+> verifiering). Obs: då måste dina leads vidarebefordras till Gmail för att synas.
 
 ## Teknik
 
