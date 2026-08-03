@@ -30,14 +30,14 @@ import {
   type Message,
   type ReminderConfig,
 } from "@/lib/types";
-import { formatDate, formatRelativeTime, initials, avatarColor } from "@/lib/format";
+import { formatDate, formatRelativeTime } from "@/lib/format";
 import {
   findRegnrInText,
   isValidRegnr,
   normalizeRegnr,
   type VehicleInfo,
 } from "@/lib/vehicle";
-import { leadKey } from "@/lib/leadMeta";
+import { leadKey, customerResponded } from "@/lib/leadMeta";
 import { suggestReply, defaultReminderText } from "@/lib/suggest";
 import { Loading } from "@/components/ui";
 
@@ -47,6 +47,40 @@ const INTENT_PHRASE: Record<Category, string> = {
   konsultation: "fråga / konsultation",
   ovrigt: "övrigt",
 };
+
+// Avataren visar ärendets initialer och färg. Ljus = väntar på svar,
+// mörkare + svart ring = kunden har svarat.
+const CATEGORY_AVATAR: Record<
+  Category,
+  { initials: string; light: string; dark: string }
+> = {
+  offert: { initials: "OF", light: "bg-yellow-200 text-yellow-800", dark: "bg-yellow-400 text-yellow-950" },
+  bokning: { initials: "BT", light: "bg-green-200 text-green-800", dark: "bg-green-600 text-white" },
+  konsultation: { initials: "FK", light: "bg-violet-200 text-violet-800", dark: "bg-violet-500 text-white" },
+  ovrigt: { initials: "ÖV", light: "bg-slate-200 text-slate-600", dark: "bg-slate-500 text-white" },
+};
+
+function CategoryAvatar({
+  category,
+  responded,
+  small,
+}: {
+  category: Category;
+  responded: boolean;
+  small?: boolean;
+}) {
+  const c = CATEGORY_AVATAR[category];
+  const dim = small ? "h-9 w-9 text-xs" : "h-10 w-10 text-sm";
+  const state = responded ? `${c.dark} ring-2 ring-slate-900` : c.light;
+  return (
+    <div
+      className={`flex ${dim} shrink-0 items-center justify-center rounded-full font-bold ${state}`}
+      title={`${INTENT_PHRASE[category]}${responded ? " – kunden har svarat" : ""}`}
+    >
+      {c.initials}
+    </div>
+  );
+}
 
 // Filter för konversationslistan – låter dig fokusera på affärer och gömma brus.
 const FILTERS: { key: string; label: string; test: (l: Lead) => boolean }[] = [
@@ -192,6 +226,7 @@ export default function InboxPage() {
                 key={lead.id}
                 lead={lead}
                 active={lead.id === selectedId}
+                responded={customerResponded(lead, threads[lead.id])}
                 onClick={() => openConversation(lead.id)}
               />
             ))}
@@ -282,10 +317,12 @@ function BarField({ label, value }: { label: string; value: string }) {
 function ConversationItem({
   lead,
   active,
+  responded,
   onClick,
 }: {
   lead: Lead;
   active: boolean;
+  responded: boolean;
   onClick: () => void;
 }) {
   const unread = !!lead.unread;
@@ -296,13 +333,7 @@ function ConversationItem({
         active ? "bg-brand-50" : "hover:bg-slate-50"
       }`}
     >
-      <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${avatarColor(
-          lead.from
-        )}`}
-      >
-        {initials(lead.from)}
-      </div>
+      <CategoryAvatar category={lead.category} responded={responded} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <span
@@ -361,13 +392,11 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
         <div className="flex items-center gap-3">
-          <div
-            className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-white ${avatarColor(
-              lead.from
-            )}`}
-          >
-            {initials(lead.from)}
-          </div>
+          <CategoryAvatar
+            category={lead.category}
+            responded={customerResponded(lead, messages)}
+            small
+          />
           <div>
             <div className="font-semibold text-slate-900">{lead.from}</div>
             <span className="text-xs text-slate-400">{lead.email}</span>
