@@ -14,8 +14,14 @@ lösenord så att bara du kommer in.
 ## Steg 2 – Importera projektet
 1. På Vercel: klicka **Add New… → Project**.
 2. Hitta repot **Ditecsisjon/Ditecsisjon** i listan → klicka **Import**.
-3. Under **Branch**, välj `claude/email-inbox-app-s9ej7t` (om du kan välja gren).
-4. Klicka **inte** Deploy än – gör steg 3 först (miljövariabler).
+3. Klicka **inte** Deploy än – gör steg 3 först (miljövariabler).
+
+> **Viktigt om gren:** koden ligger på grenen
+> `claude/email-inbox-app-s9ej7t`, inte på `main`. Efter första importen:
+> gå till **Settings → Git → Production Branch**, skriv
+> `claude/email-inbox-app-s9ej7t` och spara. Klicka sedan
+> **Deployments → Redeploy**. Då byggs rätt kod, och varje framtida ändring på
+> den grenen uppdaterar sidan automatiskt.
 
 ## Steg 3 – Fyll i inställningar (Environment Variables)
 Under **Environment Variables**, lägg till följande (Name → Value):
