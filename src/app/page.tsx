@@ -19,6 +19,7 @@ import {
   MessageSquare,
   Mail,
   StickyNote,
+  CircleCheck,
 } from "lucide-react";
 import { useLeads } from "@/lib/store";
 import {
@@ -56,7 +57,7 @@ const CATEGORY_AVATAR: Record<
 > = {
   offert: { initials: "OF", light: "bg-yellow-200 text-yellow-800", dark: "bg-yellow-400 text-yellow-950" },
   bokning: { initials: "BT", light: "bg-green-200 text-green-800", dark: "bg-green-600 text-white" },
-  konsultation: { initials: "FK", light: "bg-violet-200 text-violet-800", dark: "bg-violet-500 text-white" },
+  konsultation: { initials: "KO", light: "bg-violet-200 text-violet-800", dark: "bg-violet-500 text-white" },
   ovrigt: { initials: "ÖV", light: "bg-slate-200 text-slate-600", dark: "bg-slate-500 text-white" },
 };
 
@@ -71,7 +72,9 @@ function CategoryAvatar({
 }) {
   const c = CATEGORY_AVATAR[category];
   const dim = small ? "h-9 w-9 text-xs" : "h-10 w-10 text-sm";
-  const state = responded ? `${c.dark} ring-2 ring-slate-900` : c.light;
+  const state = responded
+    ? `${c.dark} ring-[3px] ring-black ring-offset-1`
+    : c.light;
   return (
     <div
       className={`flex ${dim} shrink-0 items-center justify-center rounded-full font-bold ${state}`}
@@ -94,7 +97,7 @@ const FILTERS: { key: string; label: string; test: (l: Lead) => boolean }[] = [
 ];
 
 export default function InboxPage() {
-  const { leads, threads, loaded, markRead, syncFromMail, syncing, source, mailStatus } =
+  const { leads, threads, loaded, markRead, syncFromMail, syncing, source, mailStatus, handled } =
     useLeads();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -226,7 +229,9 @@ export default function InboxPage() {
                 key={lead.id}
                 lead={lead}
                 active={lead.id === selectedId}
-                responded={customerResponded(lead, threads[lead.id])}
+                responded={
+                  customerResponded(lead, threads[lead.id]) || !!handled[leadKey(lead)]
+                }
                 onClick={() => openConversation(lead.id)}
               />
             ))}
@@ -376,12 +381,14 @@ function ConversationItem({
 
 function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { history, reminders, addHistory, setReminder } = useLeads();
+  const { history, reminders, handled, addHistory, setReminder, toggleHandled } = useLeads();
   const [panel, setPanel] = useState<null | "historik" | "paminnelse">(null);
 
   const key = leadKey(lead);
   const entries = history[key] ?? [];
   const reminder = reminders[key];
+  const isHandled = !!handled[key];
+  const responded = customerResponded(lead, messages) || isHandled;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -392,11 +399,7 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
         <div className="flex items-center gap-3">
-          <CategoryAvatar
-            category={lead.category}
-            responded={customerResponded(lead, messages)}
-            small
-          />
+          <CategoryAvatar category={lead.category} responded={responded} small />
           <div>
             <div className="font-semibold text-slate-900">{lead.from}</div>
             <span className="text-xs text-slate-400">{lead.email}</span>
@@ -424,6 +427,17 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
             {reminder?.enabled ? (
               <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-emerald-500" />
             ) : null}
+          </IconBtn>
+          <IconBtn
+            title={
+              isHandled
+                ? "Hanterad – klicka för att ångra"
+                : "Markera som hanterad / kund har svarat"
+            }
+            active={isHandled}
+            onClick={() => toggleHandled(key)}
+          >
+            <CircleCheck size={18} className={isHandled ? "text-emerald-600" : ""} />
           </IconBtn>
           <IconBtn title="Stjärnmärk">
             <Star size={18} />

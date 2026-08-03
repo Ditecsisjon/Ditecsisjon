@@ -27,6 +27,7 @@ import { leadKey } from "./leadMeta";
 
 const HISTORY_LS_KEY = "ditec:history";
 const REMINDER_LS_KEY = "ditec:reminders";
+const HANDLED_LS_KEY = "ditec:handled";
 
 function newId(): string {
   try {
@@ -50,6 +51,8 @@ interface LeadsContextValue {
   history: Record<string, HistoryEntry[]>;
   /** Automatiska påminnelser per ärende (nyckel = leadKey) */
   reminders: Record<string, ReminderConfig>;
+  /** Manuellt markerade som hanterade (nyckel = leadKey) */
+  handled: Record<string, boolean>;
   updateStatus: (id: string, status: Status) => void;
   markFollowUpSent: (id: string) => void;
   markAnswered: (id: string) => void;
@@ -58,6 +61,7 @@ interface LeadsContextValue {
   syncFromMail: () => Promise<void>;
   addHistory: (key: string, type: HistoryType, text: string) => void;
   setReminder: (key: string, config: ReminderConfig) => void;
+  toggleHandled: (key: string) => void;
 }
 
 const LeadsContext = createContext<LeadsContextValue | null>(null);
@@ -99,6 +103,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   const [mailStatus, setMailStatus] = useState<string | null>(null);
   const [history, setHistory] = useState<Record<string, HistoryEntry[]>>({});
   const [reminders, setReminders] = useState<Record<string, ReminderConfig>>({});
+  const [handled, setHandled] = useState<Record<string, boolean>>({});
 
   // Ladda sparad historik/påminnelser (överlever omstart via localStorage)
   useEffect(() => {
@@ -107,10 +112,20 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       if (h) setHistory(JSON.parse(h));
       const r = localStorage.getItem(REMINDER_LS_KEY);
       if (r) setReminders(JSON.parse(r));
+      const hd = localStorage.getItem(HANDLED_LS_KEY);
+      if (hd) setHandled(JSON.parse(hd));
     } catch {
       /* ignorera trasig localStorage */
     }
   }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(HANDLED_LS_KEY, JSON.stringify(handled));
+    } catch {
+      /* ignorera */
+    }
+  }, [handled]);
 
   useEffect(() => {
     try {
@@ -246,10 +261,13 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       mailStatus,
       history,
       reminders,
+      handled,
       syncFromMail,
       addHistory: addHistoryEntry,
       setReminder: (key, config) =>
         setReminders((prev) => ({ ...prev, [key]: config })),
+      toggleHandled: (key) =>
+        setHandled((prev) => ({ ...prev, [key]: !prev[key] })),
       updateStatus: (id, status) =>
         setLeads((prev) =>
           prev.map((l) =>
@@ -318,7 +336,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [leads, threads, loaded, source, syncing, mailStatus, history, reminders]
+    [leads, threads, loaded, source, syncing, mailStatus, history, reminders, handled]
   );
 
   return <LeadsContext.Provider value={value}>{children}</LeadsContext.Provider>;
