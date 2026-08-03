@@ -51,6 +51,20 @@ export interface Lead {
   aiSummary?: string;
   /** AI:s säkerhet på kategoriseringen (0–1) */
   aiConfidence?: number;
+  /** Oläst konversation – markeras i blått i listan */
+  unread?: boolean;
+}
+
+/** Ett meddelande i en konversationstråd */
+export interface Message {
+  id: string;
+  /** "in" = från kunden, "out" = skickat från oss */
+  direction: "in" | "out";
+  body: string;
+  /** ISO-datum */
+  at: string;
+  /** Filnamn på bifogade filer */
+  attachments?: string[];
 }
 
 export const CATEGORY_LABELS: Record<Category, string> = {

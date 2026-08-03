@@ -1,175 +1,464 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { ArrowRight, Send } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Search,
+  Check,
+  Paperclip,
+  Plus,
+  Star,
+  Flag,
+  Archive,
+  MoreHorizontal,
+  UserPlus,
+  ChevronDown,
+  Smile,
+  X,
+} from "lucide-react";
 import { useLeads } from "@/lib/store";
-import { pendingFollowUps } from "@/lib/follow-up";
-import { CATEGORY_LABELS, type Category } from "@/lib/types";
-import { formatAmount } from "@/lib/format";
-import { PageHeader, StatCard, Loading, EmptyState } from "@/components/ui";
-import { LeadRow } from "@/components/LeadRow";
-import { LeadDetail } from "@/components/LeadDetail";
+import { type Category, type Lead, type Message } from "@/lib/types";
+import { formatDate, initials, avatarColor } from "@/lib/format";
+import {
+  findRegnrInText,
+  isValidRegnr,
+  normalizeRegnr,
+  type VehicleInfo,
+} from "@/lib/vehicle";
+import { Loading } from "@/components/ui";
 
-const CATEGORY_BAR: Record<Category, string> = {
-  offert: "bg-amber-400",
-  bokning: "bg-emerald-400",
-  konsultation: "bg-violet-400",
-  ovrigt: "bg-slate-300",
+const INTENT_PHRASE: Record<Category, string> = {
+  offert: "offert förfrågan",
+  bokning: "boka tid",
+  konsultation: "fråga / konsultation",
+  ovrigt: "övrigt",
 };
 
-export default function DashboardPage() {
-  const { leads, loaded } = useLeads();
+export default function InboxPage() {
+  const { leads, threads, loaded, markRead } = useLeads();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = leads.find((l) => l.id === selectedId) ?? null;
+  const [query, setQuery] = useState("");
+
+  const sorted = useMemo(
+    () => [...leads].sort((a, b) => +new Date(b.receivedAt) - +new Date(a.receivedAt)),
+    [leads]
+  );
+
+  const filtered = useMemo(() => {
+    if (!query) return sorted;
+    const q = query.toLowerCase();
+    return sorted.filter((l) =>
+      `${l.from} ${l.subject} ${l.body} ${l.service ?? ""} ${l.regnr ?? ""}`
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [sorted, query]);
+
+  // Välj första konversationen som standard
+  useEffect(() => {
+    if (loaded && !selectedId && sorted.length) setSelectedId(sorted[0].id);
+  }, [loaded, selectedId, sorted]);
 
   if (!loaded) return <Loading />;
 
-  const unhandled = leads.filter((l) => l.status === "ny" || l.status === "obesvarad");
-  const awaitingQuote = leads.filter((l) => l.status === "offert_skickad");
-  const followUps = pendingFollowUps(leads);
-  const booked = leads.filter((l) => l.status === "bokad");
-  const pipelineValue = awaitingQuote.reduce((sum, l) => sum + (l.quoteAmount ?? 0), 0);
+  const selected = leads.find((l) => l.id === selectedId) ?? null;
 
-  const byCategory = (["offert", "bokning", "konsultation", "ovrigt"] as Category[]).map(
-    (c) => ({ category: c, count: leads.filter((l) => l.category === c).length })
-  );
-  const maxCat = Math.max(1, ...byCategory.map((c) => c.count));
+  function openConversation(id: string) {
+    setSelectedId(id);
+    markRead(id);
+  }
 
   return (
-    <>
-      <PageHeader
-        title="Översikt"
-        subtitle={`${leads.length} ärenden totalt · ${unhandled.length} väntar på hantering`}
-      />
+    <div className="flex h-full flex-col">
+      <VehicleBar lead={selected} />
 
-      <div className="space-y-6 p-8">
-        {/* Nyckeltal */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard
-            label="Obesvarade"
-            value={unhandled.length}
-            hint="Nya + olästa ärenden"
-            accent={unhandled.length ? "text-rose-600" : "text-slate-900"}
-          />
-          <StatCard
-            label="Offerter väntar svar"
-            value={awaitingQuote.length}
-            hint={`${formatAmount(pipelineValue)} i pipeline`}
-            accent="text-amber-600"
-          />
-          <StatCard
-            label="Uppföljningar att göra"
-            value={followUps.length}
-            hint="Offerter utan svar"
-            accent={followUps.length ? "text-brand-600" : "text-slate-900"}
-          />
-          <StatCard
-            label="Bokade"
-            value={booked.length}
-            hint="Vunna affärer"
-            accent="text-emerald-600"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Att göra idag */}
-          <div className="lg:col-span-2 space-y-6">
-            <section>
-              <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-slate-700">Att hantera</h2>
-                <Link href="/inbox" className="text-xs text-brand-600 hover:underline">
-                  Till inkorgen
-                </Link>
-              </div>
-              <div className="overflow-hidden rounded-xl border border-slate-200">
-                {unhandled.length ? (
-                  unhandled
-                    .slice(0, 5)
-                    .map((l) => (
-                      <LeadRow key={l.id} lead={l} onClick={() => setSelectedId(l.id)} />
-                    ))
-                ) : (
-                  <EmptyState>Inga obesvarade ärenden – bra jobbat! 🎉</EmptyState>
-                )}
-              </div>
-            </section>
-
-            {/* Uppföljningar */}
-            <section>
-              <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-slate-700">
-                  Föreslagna uppföljningar
-                </h2>
-                <Link href="/follow-up" className="text-xs text-brand-600 hover:underline">
-                  Se alla
-                </Link>
-              </div>
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                {followUps.length ? (
-                  followUps.slice(0, 4).map(({ lead, daysSinceQuote, isFinal }) => (
-                    <div
-                      key={lead.id}
-                      className="flex items-center justify-between border-b border-slate-100 px-5 py-3 last:border-0"
-                    >
-                      <div>
-                        <div className="text-sm font-medium text-slate-800">{lead.from}</div>
-                        <div className="text-xs text-slate-400">
-                          {lead.service} · offert {formatAmount(lead.quoteAmount)} ·{" "}
-                          {daysSinceQuote} dagar sedan
-                        </div>
-                      </div>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                          isFinal
-                            ? "bg-slate-100 text-slate-500"
-                            : "bg-brand-50 text-brand-700"
-                        }`}
-                      >
-                        {isFinal ? "Föreslå avslut" : "Följ upp"}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <EmptyState>Inga uppföljningar behövs just nu.</EmptyState>
-                )}
-              </div>
-              {followUps.length ? (
-                <Link
-                  href="/follow-up"
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-                >
-                  <Send size={15} /> Hantera uppföljningar
-                  <ArrowRight size={15} />
-                </Link>
-              ) : null}
-            </section>
-          </div>
-
-          {/* Fördelning per kategori */}
-          <div>
-            <h2 className="mb-2 text-sm font-semibold text-slate-700">Ärenden per kategori</h2>
-            <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
-              {byCategory.map(({ category, count }) => (
-                <div key={category}>
-                  <div className="mb-1 flex justify-between text-sm">
-                    <span className="text-slate-600">{CATEGORY_LABELS[category]}</span>
-                    <span className="font-medium text-slate-900">{count}</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className={`h-full rounded-full ${CATEGORY_BAR[category]}`}
-                      style={{ width: `${(count / maxCat) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+      <div className="flex min-h-0 flex-1">
+        {/* Konversationslista */}
+        <div className="flex w-80 shrink-0 flex-col border-r border-slate-200 bg-white">
+          <div className="border-b border-slate-100 p-3">
+            <div className="relative">
+              <Search
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Sök konversation…"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm focus:border-brand-500 focus:bg-white focus:outline-none"
+              />
             </div>
           </div>
+
+          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700">
+            <input type="checkbox" className="h-4 w-4 rounded border-slate-300" readOnly />
+            Alla konversationer
+            <ChevronDown size={15} className="text-slate-400" />
+          </div>
+
+          <div className="flex-1 overflow-y-auto thin-scroll">
+            {filtered.map((lead) => (
+              <ConversationItem
+                key={lead.id}
+                lead={lead}
+                active={lead.id === selectedId}
+                onClick={() => openConversation(lead.id)}
+              />
+            ))}
+            {filtered.length === 0 ? (
+              <div className="p-6 text-center text-sm text-slate-400">Inga träffar.</div>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Konversation */}
+        {selected ? (
+          <ConversationView
+            key={selected.id}
+            lead={selected}
+            messages={threads[selected.id] ?? []}
+          />
+        ) : (
+          <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
+            Välj en konversation
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// --- Fordonsrad högst upp ---------------------------------------------------
+
+function VehicleBar({ lead }: { lead: Lead | null }) {
+  const [vehicle, setVehicle] = useState<VehicleInfo | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const regnr = lead?.regnr ?? (lead ? findRegnrInText(lead.body) : null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setVehicle(null);
+    if (!regnr || !isValidRegnr(regnr)) return;
+    setLoading(true);
+    fetch(`/api/vehicle?regnr=${encodeURIComponent(normalizeRegnr(regnr))}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && !d.error) setVehicle(d as VehicleInfo);
+      })
+      .catch(() => {})
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [regnr]);
+
+  const km = vehicle?.mileageMil != null ? vehicle.mileageMil * 10 : undefined;
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-8 gap-y-1 border-b border-slate-200 bg-white px-6 py-3 text-sm">
+      <span className="font-bold text-slate-900">Biluppgifter på vald offert.</span>
+      {loading ? (
+        <span className="text-slate-400">Hämtar fordonsuppgifter…</span>
+      ) : vehicle ? (
+        <>
+          <BarField label="Regnr" value={vehicle.regnr} />
+          <BarField label="Bilmärke" value={`${vehicle.brand} ${vehicle.model}`.toUpperCase()} />
+          <BarField label="Årsmodell" value={String(vehicle.modelYear)} />
+          <BarField
+            label="Mätarställning"
+            value={km != null ? `${new Intl.NumberFormat("sv-SE").format(km)} km` : "–"}
+          />
+          <BarField label="Färg" value={vehicle.color.toUpperCase()} />
+        </>
+      ) : (
+        <span className="text-slate-400">Ingen bil kopplad till detta ärende.</span>
+      )}
+    </div>
+  );
+}
+
+function BarField({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="whitespace-nowrap">
+      <span className="text-xs uppercase tracking-wide text-slate-400">{label}: </span>
+      <span className="font-bold text-slate-900">{value}</span>
+    </span>
+  );
+}
+
+// --- Konversationsrad i listan ----------------------------------------------
+
+function ConversationItem({
+  lead,
+  active,
+  onClick,
+}: {
+  lead: Lead;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const unread = !!lead.unread;
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full gap-3 border-b border-slate-100 px-4 py-3 text-left transition ${
+        active ? "bg-brand-50" : "hover:bg-slate-50"
+      }`}
+    >
+      <div
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${avatarColor(
+          lead.from
+        )}`}
+      >
+        {initials(lead.from)}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <span
+            className={`truncate text-sm ${
+              unread ? "font-bold text-slate-900" : "font-medium text-slate-700"
+            }`}
+          >
+            {lead.from}
+          </span>
+          <span className="shrink-0 text-xs text-slate-400">
+            {new Date(lead.receivedAt).toLocaleDateString("sv-SE", {
+              day: "numeric",
+              month: "short",
+            })}
+          </span>
+        </div>
+        <div
+          className={`truncate text-sm ${
+            unread ? "font-bold text-slate-900" : "text-slate-500"
+          }`}
+        >
+          {INTENT_PHRASE[lead.category]}
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="truncate text-xs text-slate-400">
+            {lead.service ?? lead.subject}
+          </span>
+          {unread ? (
+            <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-brand-600 px-1.5 text-[11px] font-semibold text-white">
+              1
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// --- Konversationsvy (tråd + skrivruta) -------------------------------------
+
+function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+  }, [messages.length]);
+
+  return (
+    <div className="flex min-w-0 flex-1 flex-col bg-slate-50">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-white ${avatarColor(
+              lead.from
+            )}`}
+          >
+            {initials(lead.from)}
+          </div>
+          <div>
+            <div className="font-semibold text-slate-900">{lead.from}</div>
+            <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600">
+              Tilldela ditt team <ChevronDown size={13} />
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 text-slate-400">
+          <IconBtn title="Kontakt">
+            <UserPlus size={18} />
+          </IconBtn>
+          <IconBtn title="Flagga">
+            <Flag size={18} />
+          </IconBtn>
+          <IconBtn title="Stjärnmärk">
+            <Star size={18} />
+          </IconBtn>
+          <IconBtn title="Arkivera">
+            <Archive size={18} />
+          </IconBtn>
+          <IconBtn title="Mer">
+            <MoreHorizontal size={18} />
+          </IconBtn>
         </div>
       </div>
 
-      {selected ? <LeadDetail lead={selected} onClose={() => setSelectedId(null)} /> : null}
-    </>
+      {/* Tråd */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-5 thin-scroll">
+        <div className="mx-auto max-w-3xl space-y-4">
+          {messages.map((m) => (
+            <MessageBubble key={m.id} message={m} lead={lead} />
+          ))}
+        </div>
+      </div>
+
+      {/* Skrivruta */}
+      <Composer lead={lead} />
+    </div>
+  );
+}
+
+function IconBtn({ children, title }: { children: React.ReactNode; title: string }) {
+  return (
+    <button
+      title={title}
+      className="rounded-lg p-2 hover:bg-slate-100 hover:text-slate-600"
+    >
+      {children}
+    </button>
+  );
+}
+
+function MessageBubble({ message, lead }: { message: Message; lead: Lead }) {
+  const isOut = message.direction === "out";
+  return (
+    <div>
+      <div className="mb-1 text-center text-xs text-slate-400">
+        {formatDate(message.at)}
+      </div>
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-2 text-sm font-semibold text-slate-900">
+          {isOut ? "Ditec Sisjön" : lead.from}
+        </div>
+        <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+          {message.body}
+        </div>
+        {message.attachments?.length ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {message.attachments.map((a) => (
+              <span
+                key={a}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600"
+              >
+                <Paperclip size={13} /> {a}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <div className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-2 text-xs text-slate-400">
+          <Check size={13} /> {isOut ? "Skickat via mejl" : "E-post"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Skrivruta med bifogning ------------------------------------------------
+
+function Composer({ lead }: { lead: Lead }) {
+  const { sendMessage } = useLeads();
+  const [subject, setSubject] = useState(`Re: ${lead.subject}`);
+  const [body, setBody] = useState("");
+  const [files, setFiles] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []).map((f) => f.name);
+    if (picked.length) setFiles((prev) => [...prev, ...picked]);
+    e.target.value = "";
+  }
+
+  function send() {
+    if (!body.trim() && files.length === 0) return;
+    sendMessage(lead.id, body.trim(), files);
+    setBody("");
+    setFiles([]);
+  }
+
+  return (
+    <div className="border-t border-slate-200 bg-white px-6 py-3">
+      <div className="mx-auto max-w-3xl rounded-xl border border-slate-200">
+        {/* Rubrikrad */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-100 px-4 py-2 text-sm">
+          <span className="flex items-center gap-1 text-slate-500">
+            Meddela via:
+            <span className="flex items-center gap-1 font-medium text-brand-600">
+              E-post <ChevronDown size={13} />
+            </span>
+          </span>
+          <span className="text-slate-500">
+            Till: <span className="text-slate-700">{lead.email}</span>
+          </span>
+        </div>
+        <div className="border-b border-slate-100 px-4 py-2">
+          <input
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            className="w-full text-sm text-slate-700 focus:outline-none"
+            placeholder="Ämne"
+          />
+        </div>
+
+        {/* Meddelandetext */}
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          rows={3}
+          placeholder="Skriv ditt meddelande…"
+          className="w-full resize-none px-4 py-3 text-sm text-slate-700 focus:outline-none"
+        />
+
+        {/* Bifogade filer */}
+        {files.length ? (
+          <div className="flex flex-wrap gap-2 px-4 pb-2">
+            {files.map((f, i) => (
+              <span
+                key={`${f}-${i}`}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600"
+              >
+                <Paperclip size={13} /> {f}
+                <button
+                  onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
+                  className="text-slate-400 hover:text-rose-500"
+                >
+                  <X size={13} />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Verktygsrad */}
+        <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2">
+          <div className="flex items-center gap-1 text-slate-400">
+            <IconBtn title="Lägg till">
+              <Plus size={18} />
+            </IconBtn>
+            <button
+              title="Bifoga fil"
+              onClick={() => fileRef.current?.click()}
+              className="rounded-lg p-2 hover:bg-slate-100 hover:text-slate-600"
+            >
+              <Paperclip size={18} />
+            </button>
+            <IconBtn title="Emoji">
+              <Smile size={18} />
+            </IconBtn>
+            <input ref={fileRef} type="file" multiple hidden onChange={onPick} />
+          </div>
+          <button
+            onClick={send}
+            disabled={!body.trim() && files.length === 0}
+            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Skicka mejl
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

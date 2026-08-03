@@ -13,8 +13,8 @@ import { useLeads } from "@/lib/store";
 import { pendingFollowUps } from "@/lib/follow-up";
 
 const NAV = [
-  { href: "/", label: "Översikt", icon: LayoutDashboard },
-  { href: "/inbox", label: "Inkorg", icon: Inbox },
+  { href: "/", label: "Inkorg", icon: Inbox },
+  { href: "/oversikt", label: "Översikt", icon: LayoutDashboard },
   { href: "/pipeline", label: "Pipeline", icon: KanbanSquare },
   { href: "/follow-up", label: "Uppföljningar", icon: Send },
 ];
@@ -27,7 +27,7 @@ export function Sidebar() {
   const followUps = pendingFollowUps(leads).length;
 
   const badges: Record<string, number> = {
-    "/inbox": unhandled,
+    "/": unhandled,
     "/follow-up": followUps,
   };
 

@@ -36,3 +36,20 @@ export function initials(name: string): string {
     .map((p) => p[0]?.toUpperCase() ?? "")
     .join("");
 }
+
+const AVATAR_COLORS = [
+  "bg-amber-400",
+  "bg-rose-400",
+  "bg-emerald-400",
+  "bg-sky-400",
+  "bg-violet-400",
+  "bg-orange-400",
+  "bg-teal-400",
+  "bg-indigo-400",
+];
+
+/** Deterministisk färg för en avatar baserat på namn. */
+export function avatarColor(name: string): string {
+  const sum = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+}

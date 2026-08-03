@@ -12,9 +12,9 @@ kunden inte återkommit om.
 
 | Vy | Funktion |
 |----|----------|
-| **Översikt** | Nyckeltal (obesvarade, offerter i pipeline, uppföljningar att göra, bokade), "att hantera"-lista och fördelning per kategori. |
-| **Inkorg** | Alla mejl i en lista med färgkodad kategori + status. Sök och filtrera på kategori/status. Klicka för att läsa, svara och ändra status. |
-| **Fordonsuppslag** | När du öppnar ett mejl hämtas fordonsuppgifter automatiskt från regnumret i mejlet: bilmärke, modell, årsmodell, färg, miltal och längd. |
+| **Inkorg** (startvy) | Mejlklient-layout: konversationslista till vänster (olästa markerade i blått), mejltråd uppe till höger och en skrivruta med bifogning nere till höger. Fordonsuppgifter för vald offert visas i en rad högst upp. |
+| **Fordonsuppslag** | När du öppnar ett mejl hämtas fordonsuppgifter automatiskt från regnumret i mejlet: bilmärke, modell, årsmodell, färg, mätarställning och längd – visas både i toppraden och i ärendets detaljvy. |
+| **Översikt** | Nyckeltal (obesvarade, offerter i pipeline, uppföljningar, bokade), "att hantera"-lista och fördelning per kategori. |
 | **Pipeline** | Kanban-vy: `Ny → Obesvarad → Besvarad → Offert skickad → Bokad / Ingen affär`, med summerat offertvärde per steg. |
 | **Uppföljningar** | Offerter utan svar flaggas automatiskt. Appen skriver ett färdigt uppföljningsmejl som du redigerar och godkänner – ett klick för att skicka. |
 
@@ -122,8 +122,8 @@ Idag öppnas i stället ett förifyllt mejl i ditt vanliga e-postprogram via
 ```
 src/
 ├── app/
-│   ├── page.tsx            Översikt / dashboard
-│   ├── inbox/page.tsx      Inkorg med filter
+│   ├── page.tsx            Inkorg (startvy) – konversationer, tråd, skrivruta
+│   ├── oversikt/page.tsx   Översikt / dashboard
 │   ├── pipeline/page.tsx   Kanban-pipeline
 │   ├── follow-up/page.tsx  Uppföljningsförslag
 │   └── api/
