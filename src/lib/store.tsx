@@ -20,11 +20,18 @@ interface LeadsContextValue {
   leads: Lead[];
   threads: Record<string, Message[]>;
   loaded: boolean;
+  /** Var datan kommer ifrån just nu */
+  source: "demo" | "mail";
+  /** Pågår en mejlhämtning? */
+  syncing: boolean;
+  /** Senaste status/felmeddelande från mejlhämtningen */
+  mailStatus: string | null;
   updateStatus: (id: string, status: Status) => void;
   markFollowUpSent: (id: string) => void;
   markAnswered: (id: string) => void;
   markRead: (id: string) => void;
   sendMessage: (id: string, body: string, attachments?: string[]) => void;
+  syncFromMail: () => Promise<void>;
 }
 
 const LeadsContext = createContext<LeadsContextValue | null>(null);
@@ -61,11 +68,43 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [threads, setThreads] = useState<Record<string, Message[]>>({});
   const [loaded, setLoaded] = useState(false);
+  const [source, setSource] = useState<"demo" | "mail">("demo");
+  const [syncing, setSyncing] = useState(false);
+  const [mailStatus, setMailStatus] = useState<string | null>(null);
+
+  async function syncFromMail() {
+    setSyncing(true);
+    setMailStatus(null);
+    try {
+      const res = await fetch("/api/mail/sync");
+      const data = await res.json();
+      if (!data.configured) {
+        setMailStatus("Demoläge – koppla IMAP i .env.local för riktiga mejl.");
+        return;
+      }
+      if (data.error) {
+        setMailStatus(`Kunde inte hämta mejl: ${data.error}`);
+        return;
+      }
+      const mailLeads: Lead[] = (data.leads ?? []).map((l: Lead) => ({
+        ...l,
+        unread: l.unread ?? (l.status === "ny" || l.status === "obesvarad"),
+      }));
+      setLeads(mailLeads);
+      setThreads(data.threads ?? {});
+      setSource("mail");
+      setMailStatus(`Hämtade ${mailLeads.length} mejl från ${data.account ?? "brevlådan"}.`);
+    } catch {
+      setMailStatus("Kunde inte nå mejlservern.");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   useEffect(() => {
+    // Visa demodata direkt
     const data = generateLeads().map((lead) => ({
       ...lead,
-      // Oläst som standard om ärendet är nytt eller obesvarat
       unread: lead.unread ?? (lead.status === "ny" || lead.status === "obesvarad"),
     }));
     const initThreads: Record<string, Message[]> = {};
@@ -73,6 +112,9 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     setLeads(data);
     setThreads(initThreads);
     setLoaded(true);
+    // Försök hämta riktiga mejl i bakgrunden (byter ut demodatan om det lyckas)
+    syncFromMail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const value = useMemo<LeadsContextValue>(
@@ -80,6 +122,10 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       leads,
       threads,
       loaded,
+      source,
+      syncing,
+      mailStatus,
+      syncFromMail,
       updateStatus: (id, status) =>
         setLeads((prev) =>
           prev.map((l) =>
@@ -141,7 +187,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
         );
       },
     }),
-    [leads, threads, loaded]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [leads, threads, loaded, source, syncing, mailStatus]
   );
 
   return <LeadsContext.Provider value={value}>{children}</LeadsContext.Provider>;

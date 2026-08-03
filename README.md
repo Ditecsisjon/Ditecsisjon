@@ -86,7 +86,39 @@ Testa fordonsuppslaget:
 curl "http://localhost:3000/api/vehicle?regnr=JHK427"
 ```
 
-## Steg 3 – koppla din riktiga Gmail (nästa utbyggnad)
+## Hämta riktiga mejl via IMAP (Websupport)
+
+Mejlen från Eniro m.fl. kommer till `info@ditecsisjon.se` som ligger hos
+Websupport. Appen kan hämta dem direkt via IMAP – standardprotokoll, ingen
+OAuth krävs.
+
+1. Kopiera `.env.example` till `.env.local` och fyll i:
+   ```
+   IMAP_HOST=imap.websupport.se
+   IMAP_PORT=993
+   IMAP_SECURE=true
+   IMAP_USER=info@ditecsisjon.se
+   IMAP_PASSWORD=ditt-lösenord
+   IMAP_MAILBOX=INBOX
+   MAIL_FETCH_LIMIT=40
+   ```
+2. Starta om appen (`npm run dev`). Inkorgen hämtar nu de senaste mejlen
+   automatiskt vid start, och du kan uppdatera manuellt med
+   ↻-knappen bredvid "Alla konversationer".
+
+Varje inkommet mejl körs genom kategoriseringen (offert/bokning/konsultation/
+övrigt) och regnummer plockas automatiskt ur texten för fordonsuppslaget.
+
+**Säkerhet:** `.env.local` är gitignore:at – lösenordet hamnar aldrig i koden.
+Kör helst appen på en egen server/dator, inte som statisk sajt, eftersom IMAP
+sker på serversidan. Se `src/lib/mail.ts` och `src/app/api/mail/sync/route.ts`.
+Källa för serverinställningar: Websupports kunskapsdatabas.
+
+> Vill du även **skicka** svar direkt via din brevlåda kan vi lägga till SMTP
+> (`smtp.websupport.se:465`). Idag skickas svar via appens tråd / ditt
+> e-postprogram.
+
+## Steg 3 – koppla din riktiga Gmail (alternativ till IMAP)
 
 Idag använder appen exempeldata från `src/lib/sample-data.ts`. För att läsa in
 riktiga mejl från `jobb.ditec@gmail.com`:

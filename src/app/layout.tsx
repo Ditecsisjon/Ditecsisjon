@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { LeadsProvider } from "@/lib/store";
+import { AppMenu } from "@/components/AppMenu";
 
 export const metadata: Metadata = {
   title: "Ditec Inkorg – Sisjön",
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="flex h-screen overflow-hidden">
             <main className="flex-1 overflow-y-auto">{children}</main>
           </div>
+          <AppMenu />
         </LeadsProvider>
       </body>
     </html>

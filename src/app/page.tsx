@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Smile,
   X,
+  RefreshCw,
 } from "lucide-react";
 import { useLeads } from "@/lib/store";
 import { type Category, type Lead, type Message } from "@/lib/types";
@@ -34,7 +35,8 @@ const INTENT_PHRASE: Record<Category, string> = {
 };
 
 export default function InboxPage() {
-  const { leads, threads, loaded, markRead } = useLeads();
+  const { leads, threads, loaded, markRead, syncFromMail, syncing, source, mailStatus } =
+    useLeads();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
@@ -93,7 +95,30 @@ export default function InboxPage() {
             <input type="checkbox" className="h-4 w-4 rounded border-slate-300" readOnly />
             Alla konversationer
             <ChevronDown size={15} className="text-slate-400" />
+            <button
+              onClick={() => syncFromMail()}
+              disabled={syncing}
+              title={
+                source === "mail"
+                  ? "Hämta nya mejl"
+                  : "Hämta mejl från din brevlåda (kräver IMAP-koppling)"
+              }
+              className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+            >
+              <RefreshCw size={16} className={syncing ? "animate-spin" : ""} />
+            </button>
           </div>
+          {mailStatus ? (
+            <div
+              className={`border-b px-4 py-1.5 text-[11px] ${
+                source === "mail"
+                  ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+                  : "border-slate-100 bg-slate-50 text-slate-400"
+              }`}
+            >
+              {mailStatus}
+            </div>
+          ) : null}
 
           <div className="flex-1 overflow-y-auto thin-scroll">
             {filtered.map((lead) => (
