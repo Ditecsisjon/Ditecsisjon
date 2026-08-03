@@ -14,6 +14,7 @@ kunden inte återkommit om.
 |----|----------|
 | **Översikt** | Nyckeltal (obesvarade, offerter i pipeline, uppföljningar att göra, bokade), "att hantera"-lista och fördelning per kategori. |
 | **Inkorg** | Alla mejl i en lista med färgkodad kategori + status. Sök och filtrera på kategori/status. Klicka för att läsa, svara och ändra status. |
+| **Fordonsuppslag** | När du öppnar ett mejl hämtas fordonsuppgifter automatiskt från regnumret i mejlet: bilmärke, modell, årsmodell, färg, miltal och längd. |
 | **Pipeline** | Kanban-vy: `Ny → Obesvarad → Besvarad → Offert skickad → Bokad / Ingen affär`, med summerat offertvärde per steg. |
 | **Uppföljningar** | Offerter utan svar flaggas automatiskt. Appen skriver ett färdigt uppföljningsmejl som du redigerar och godkänner – ett klick för att skicka. |
 
@@ -27,6 +28,30 @@ Nya mejl kan klassificeras av Claude (kategori, prioritet, tjänst och en kort
 sammanfattning). Utan API-nyckel används automatiskt en regelbaserad
 kategorisering så att appen alltid fungerar. Se `src/app/api/classify/route.ts`
 och `src/lib/classifier.ts`.
+
+### Fordonsuppgifter via regnummer
+När ett mejl öppnas letar appen efter ett svenskt registreringsnummer i texten
+och hämtar automatiskt fordonsuppgifter (bilmärke, modell, årsmodell, färg,
+miltal och längd). Du kan också skriva in ett regnummer manuellt, samt infoga
+bilinfon i svaret med ett klick.
+
+I demoläge används inbyggd exempeldata. För skarpa uppgifter, koppla en svensk
+fordonstjänst genom att sätta `VEHICLE_API_URL` och `VEHICLE_API_KEY` i
+`.env.local`:
+
+| Tjänst | Sida |
+|--------|------|
+| Biluppgifter.se (API) | <https://apidocs.biluppgifter.se/> |
+| Car.info (B2B API) | <https://www.car.info/sv-se/b2b/api> |
+| Checkbiz | <https://checkbiz.se/data/fordon/> |
+| Fordonsfakta | <https://fordonsfakta.se/> |
+
+De flesta kräver API-nyckel och ibland tillstånd för direktåtkomst från
+Transportstyrelsen. Fältnamnen skiljer sig mellan leverantörer – justera
+mappningen i `mapProviderResponse` i `src/app/api/vehicle/route.ts`. Använd
+`{regnr}` som platshållare i URL:en om leverantören vill ha regnumret i
+sökvägen. **Obs:** miltal/mätarställning i registret är "senast kända vid
+besiktning", inte realtid.
 
 ## Kom igång
 
@@ -53,7 +78,12 @@ Testa direkt via API:t:
 ```bash
 curl -X POST http://localhost:3000/api/classify \
   -H "content-type: application/json" \
-  -d '{"subject":"Offert flyttstädning","body":"Vad kostar flyttstädning av en 3:a?"}'
+  -d '{"subject":"Offert rekond","body":"Vad kostar en helrekond av min Volvo XC60?"}'
+```
+
+Testa fordonsuppslaget:
+```bash
+curl "http://localhost:3000/api/vehicle?regnr=JHK427"
 ```
 
 ## Steg 3 – koppla din riktiga Gmail (nästa utbyggnad)
@@ -96,12 +126,15 @@ src/
 │   ├── inbox/page.tsx      Inkorg med filter
 │   ├── pipeline/page.tsx   Kanban-pipeline
 │   ├── follow-up/page.tsx  Uppföljningsförslag
-│   └── api/classify/       AI-kategorisering (med regel-fallback)
+│   └── api/
+│       ├── classify/       AI-kategorisering (med regel-fallback)
+│       └── vehicle/        Fordonsuppslag via regnummer (demo + leverantör)
 ├── components/             UI-komponenter (badges, rader, detaljvy m.m.)
 └── lib/
     ├── types.ts            Datamodell
     ├── sample-data.ts      Exempeldata (byts mot Gmail i steg 3)
     ├── classifier.ts       Regelbaserad kategorisering
     ├── follow-up.ts        Uppföljningslogik + mallar
+    ├── vehicle.ts          Fordonslogik + regnummer + demodata
     └── store.tsx           State-hantering
 ```

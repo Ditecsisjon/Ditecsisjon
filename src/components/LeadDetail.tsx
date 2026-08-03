@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { X, Sparkles, Phone, Mail, Check } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { X, Sparkles, Phone, Mail, Check, Car, Search, Loader2 } from "lucide-react";
 import type { Lead, Status } from "@/lib/types";
 import { STATUS_LABELS, PIPELINE_ORDER } from "@/lib/types";
 import { useLeads } from "@/lib/store";
 import { formatDate, formatAmount } from "@/lib/format";
+import {
+  findRegnrInText,
+  isValidRegnr,
+  normalizeRegnr,
+  type VehicleInfo,
+} from "@/lib/vehicle";
 import { CategoryBadge, StatusBadge, PriorityDot } from "./Badges";
 import { Avatar } from "./ui";
 
@@ -19,6 +25,10 @@ export function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void 
     markAnswered(lead.id);
     setSent(true);
   }
+
+  const insertToReply = useCallback((text: string) => {
+    setReply((prev) => (prev ? `${prev}\n\n${text}` : text));
+  }, []);
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
@@ -70,6 +80,9 @@ export function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void 
             </div>
           ) : null}
 
+          {/* Fordonsuppgifter */}
+          <VehiclePanel lead={lead} onInsert={insertToReply} />
+
           {/* Mejltext */}
           <div className="mt-4 whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
             {lead.body}
@@ -107,7 +120,7 @@ export function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void 
                 <textarea
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
-                  rows={4}
+                  rows={5}
                   placeholder={`Hej ${lead.from.split(" ")[0]}, tack för din förfrågan …`}
                   className="w-full rounded-lg border border-slate-300 p-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
@@ -145,6 +158,143 @@ export function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void 
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// --- Fordonspanel -----------------------------------------------------------
+
+function formatMil(mil?: number): string {
+  if (mil == null) return "–";
+  const km = mil * 10;
+  return `${new Intl.NumberFormat("sv-SE").format(mil)} mil (≈ ${new Intl.NumberFormat(
+    "sv-SE"
+  ).format(km)} km)`;
+}
+
+function formatLength(mm?: number): string {
+  if (mm == null) return "–";
+  const m = (mm / 1000).toFixed(2).replace(".", ",");
+  return `${new Intl.NumberFormat("sv-SE").format(mm)} mm (${m} m)`;
+}
+
+function VehiclePanel({
+  lead,
+  onInsert,
+}: {
+  lead: Lead;
+  onInsert: (text: string) => void;
+}) {
+  const initial = lead.regnr ?? findRegnrInText(lead.body) ?? "";
+  const [regnr, setRegnr] = useState(initial);
+  const [vehicle, setVehicle] = useState<VehicleInfo | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchVehicle = useCallback(async (value: string) => {
+    if (!isValidRegnr(value)) {
+      setError("Ogiltigt registreringsnummer (t.ex. ABC123 eller ABC12D).");
+      setVehicle(null);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/vehicle?regnr=${encodeURIComponent(normalizeRegnr(value))}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Kunde inte hämta fordonsuppgifter.");
+        setVehicle(null);
+      } else {
+        setVehicle(data as VehicleInfo);
+      }
+    } catch {
+      setError("Kunde inte hämta fordonsuppgifter.");
+      setVehicle(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Hämta automatiskt när mejlet öppnas om ett regnummer hittats
+  useEffect(() => {
+    if (initial && isValidRegnr(initial)) {
+      fetchVehicle(initial);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lead.id]);
+
+  const rows: Array<[string, string]> = vehicle
+    ? [
+        ["Bilmärke", vehicle.brand],
+        ["Modell", vehicle.model],
+        ["Årsmodell", vehicle.modelYear ? String(vehicle.modelYear) : "–"],
+        ["Färg", vehicle.color],
+        ["Miltal", formatMil(vehicle.mileageMil)],
+        ["Längd", formatLength(vehicle.lengthMm)],
+      ]
+    : [];
+
+  function insert() {
+    if (!vehicle) return;
+    const text = `Fordon: ${vehicle.brand} ${vehicle.model} (${vehicle.modelYear}), ${vehicle.color}, reg.nr ${vehicle.regnr}.`;
+    onInsert(text);
+  }
+
+  return (
+    <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+        <Car size={15} /> Fordonsuppgifter
+        {vehicle?.source === "demo" ? (
+          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-normal text-slate-400">
+            demo
+          </span>
+        ) : null}
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          value={regnr}
+          onChange={(e) => setRegnr(e.target.value.toUpperCase())}
+          onKeyDown={(e) => e.key === "Enter" && fetchVehicle(regnr)}
+          placeholder="ABC123"
+          className="w-32 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-mono uppercase tracking-wider focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+        />
+        <button
+          onClick={() => fetchVehicle(regnr)}
+          disabled={loading || !regnr}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-40"
+        >
+          {loading ? <Loader2 size={15} className="animate-spin" /> : <Search size={15} />}
+          Hämta
+        </button>
+      </div>
+
+      {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
+
+      {vehicle ? (
+        <>
+          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+            {rows.map(([label, value]) => (
+              <div key={label} className="min-w-0">
+                <dt className="text-[11px] uppercase tracking-wide text-slate-400">{label}</dt>
+                <dd className="truncate text-sm font-medium text-slate-800" title={value}>
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          {vehicle.note ? (
+            <p className="mt-2 text-[11px] text-slate-400">{vehicle.note}</p>
+          ) : null}
+          <button
+            onClick={insert}
+            className="mt-2 text-xs font-medium text-brand-600 hover:underline"
+          >
+            + Infoga i svaret
+          </button>
+        </>
+      ) : null}
     </div>
   );
 }

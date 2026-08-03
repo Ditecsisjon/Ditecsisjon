@@ -35,8 +35,10 @@ export interface Lead {
   category: Category;
   status: Status;
   priority: Priority;
-  /** Vilken tjänst det gäller, t.ex. "Flyttstädning" */
+  /** Vilken tjänst det gäller, t.ex. "Rekonditionering" */
   service?: string;
+  /** Kundens registreringsnummer om det nämnts i mejlet */
+  regnr?: string;
   /** ISO-datum då offert skickades (om status = offert_skickad) */
   quoteSentAt?: string;
   /** Offertbelopp i SEK */

@@ -63,13 +63,12 @@ const CATEGORY_KEYWORDS: Record<Category, string[]> = {
 };
 
 const SERVICE_KEYWORDS: Record<string, string[]> = {
-  Flyttstädning: ["flyttstäd", "flytt"],
-  Hemstädning: ["hemstäd", "hemma", "veckostäd", "städhjälp hemma"],
-  Kontorsstädning: ["kontor", "företagsstäd", "lokalvård"],
-  Fönsterputs: ["fönster", "fönsterputs", "putsa"],
-  Byggstädning: ["bygg", "byggstäd", "renovering"],
-  Storstädning: ["storstäd", "grovstäd"],
-  Trappstädning: ["trapp", "trapphus"],
+  Helrekond: ["helrekond", "komplett rekond", "in- och utvändig", "genomgång"],
+  Rekonditionering: ["rekond", "rekonditioner", "uppfräsch"],
+  Lackskydd: ["lackskydd", "keramisk", "lackförsegling", "vax", "polering", "polera"],
+  Rostskydd: ["rostskydd", "rost", "dinitrol", "underredsbehandling"],
+  "Invändig rengöring": ["invändig", "inredning", "säten", "klädsel", "sanering"],
+  Strålkastarrenovering: ["strålkastare", "strålkastarrenovering", "blanka"],
 };
 
 const HIGH_PRIORITY_SIGNALS = [
