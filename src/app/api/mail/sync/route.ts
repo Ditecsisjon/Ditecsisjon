@@ -7,6 +7,7 @@ import { readMailConfig, fetchLeadsFromImap } from "@/lib/mail";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // ge IMAP-hämtningen tid på hostad server
 
 export async function GET() {
   const config = readMailConfig();

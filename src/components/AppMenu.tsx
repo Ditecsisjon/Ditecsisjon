@@ -10,6 +10,7 @@ import {
   KanbanSquare,
   Send,
   X,
+  LogOut,
 } from "lucide-react";
 
 const NAV = [
@@ -32,6 +33,9 @@ export function AppMenu() {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
+
+  // Visa inte menyn på inloggningssidan
+  if (pathname === "/login") return null;
 
   return (
     <div ref={ref} className="fixed bottom-4 left-4 z-50">
@@ -64,6 +68,15 @@ export function AppMenu() {
                 </Link>
               );
             })}
+            <button
+              onClick={async () => {
+                await fetch("/api/logout", { method: "POST" });
+                window.location.href = "/login";
+              }}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            >
+              <LogOut size={17} /> Logga ut
+            </button>
           </nav>
         </div>
       ) : null}
