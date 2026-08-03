@@ -46,10 +46,36 @@ function FollowUpCard({ suggestion }: { suggestion: FollowUpSuggestion }) {
   const [subject, setSubject] = useState(suggestion.subject);
   const [body, setBody] = useState(suggestion.body);
   const [done, setDone] = useState<null | string>(null);
+  const [sending, setSending] = useState(false);
 
   const mailto = `mailto:${encodeURIComponent(lead.email)}?subject=${encodeURIComponent(
     subject
   )}&body=${encodeURIComponent(body)}`;
+
+  async function sendFollowUp() {
+    setSending(true);
+    try {
+      const res = await fetch("/api/mail/send", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ to: lead.email, subject, body }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setDone(`Kunde inte skicka: ${data.error}`);
+        return;
+      }
+      markFollowUpSent(lead.id);
+      const label = isFinal ? "Avslut" : `Uppföljning ${step}`;
+      setDone(
+        data.sent ? `${label} skickad via mejl` : `${label} markerad (demoläge – SMTP ej kopplat)`
+      );
+    } catch {
+      setDone("Kunde inte nå mejlservern.");
+    } finally {
+      setSending(false);
+    }
+  }
 
   if (done) {
     return (
@@ -102,13 +128,11 @@ function FollowUpCard({ suggestion }: { suggestion: FollowUpSuggestion }) {
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <button
-            onClick={() => {
-              markFollowUpSent(lead.id);
-              setDone(isFinal ? "Avslut skickat" : `Uppföljning ${step} skickad`);
-            }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+            onClick={sendFollowUp}
+            disabled={sending}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
           >
-            <Send size={15} /> Markera som skickad
+            <Send size={15} /> {sending ? "Skickar…" : "Skicka uppföljning"}
           </button>
           <a
             href={mailto}

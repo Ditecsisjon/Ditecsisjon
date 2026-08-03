@@ -389,6 +389,8 @@ function Composer({ lead }: { lead: Lead }) {
   const [subject, setSubject] = useState(`Re: ${lead.subject}`);
   const [body, setBody] = useState("");
   const [files, setFiles] = useState<string[]>([]);
+  const [sending, setSending] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -397,11 +399,35 @@ function Composer({ lead }: { lead: Lead }) {
     e.target.value = "";
   }
 
-  function send() {
+  async function send() {
     if (!body.trim() && files.length === 0) return;
-    sendMessage(lead.id, body.trim(), files);
-    setBody("");
-    setFiles([]);
+    setSending(true);
+    setStatus(null);
+    const text =
+      body.trim() + (files.length ? `\n\n(Bifogade filer: ${files.join(", ")})` : "");
+    try {
+      const res = await fetch("/api/mail/send", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ to: lead.email, subject, body: text }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setStatus(`Kunde inte skicka: ${data.error}`);
+        return;
+      }
+      // Skickat via SMTP, eller demoläge (inget SMTP konfigurerat)
+      sendMessage(lead.id, body.trim(), files);
+      setBody("");
+      setFiles([]);
+      setStatus(
+        data.sent ? "Mejl skickat till kunden." : "Registrerat (demoläge – SMTP ej kopplat)."
+      );
+    } catch {
+      setStatus("Kunde inte nå mejlservern.");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -475,13 +501,18 @@ function Composer({ lead }: { lead: Lead }) {
             </IconBtn>
             <input ref={fileRef} type="file" multiple hidden onChange={onPick} />
           </div>
-          <button
-            onClick={send}
-            disabled={!body.trim() && files.length === 0}
-            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Skicka mejl
-          </button>
+          <div className="flex items-center gap-3">
+            {status ? (
+              <span className="text-xs text-slate-400">{status}</span>
+            ) : null}
+            <button
+              onClick={send}
+              disabled={sending || (!body.trim() && files.length === 0)}
+              className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {sending ? "Skickar…" : "Skicka mejl"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

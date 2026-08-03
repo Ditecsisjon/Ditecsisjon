@@ -114,9 +114,14 @@ Kör helst appen på en egen server/dator, inte som statisk sajt, eftersom IMAP
 sker på serversidan. Se `src/lib/mail.ts` och `src/app/api/mail/sync/route.ts`.
 Källa för serverinställningar: Websupports kunskapsdatabas.
 
-> Vill du även **skicka** svar direkt via din brevlåda kan vi lägga till SMTP
-> (`smtp.websupport.se:465`). Idag skickas svar via appens tråd / ditt
-> e-postprogram.
+### Skicka svar via SMTP
+Svar och uppföljningar skickas direkt via `smtp.websupport.se:465` när SMTP är
+konfigurerat (använder IMAP-uppgifterna om inget separat anges). Utan
+konfiguration registreras svaret lokalt (demoläge). Se `src/lib/mailer.ts` och
+`src/app/api/mail/send/route.ts`.
+
+> **Ny på Windows?** Följ den enkla steg-för-steg-guiden i **[SETUP.md](SETUP.md)**
+> – dubbelklicka på `start.bat` så installeras och startas allt automatiskt.
 
 ## Steg 3 – koppla din riktiga Gmail (alternativ till IMAP)
 
