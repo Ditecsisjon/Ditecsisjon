@@ -27,11 +27,9 @@ if not exist .env.local (
   notepad .env.local
 )
 
-REM Bygg appen for ett stabilt korlage (bara forsta gangen)
-if not exist ".next\BUILD_ID" (
-  echo Forbereder appen. Detta kan ta en minut forsta gangen...
-  call npm run build
-)
+REM Bygg alltid sa att senaste koden kors (undviker gammal cache)
+echo Forbereder appen ^(bygger senaste versionen^)...
+call npm run build
 
 echo.
 echo Startar appen... En webblasare oppnas strax pa http://localhost:3000
