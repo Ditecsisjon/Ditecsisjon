@@ -86,65 +86,47 @@ Testa fordonsuppslaget:
 curl "http://localhost:3000/api/vehicle?regnr=JHK427"
 ```
 
-## Hämta riktiga mejl via IMAP (Websupport)
+## Koppla din Gmail (offert.ditec@gmail.com)
 
-Mejlen från Eniro m.fl. kommer till `info@ditecsisjon.se` som ligger hos
-Websupport. Appen kan hämta dem direkt via IMAP – standardprotokoll, ingen
-OAuth krävs.
+Appen hämtar och skickar mejl direkt via Gmails IMAP/SMTP med ett **app-lösenord**
+– enklare än OAuth och kräver inget Google Cloud-projekt.
 
-1. Kopiera `.env.example` till `.env.local` och fyll i:
+1. Slå på **2-stegsverifiering**: <https://myaccount.google.com/security>
+2. Skapa ett **app-lösenord** (16 tecken): <https://myaccount.google.com/apppasswords>
+3. Kopiera `.env.example` till `.env.local` och fyll i app-lösenordet:
    ```
-   IMAP_HOST=imap.websupport.se
+   IMAP_HOST=imap.gmail.com
    IMAP_PORT=993
    IMAP_SECURE=true
-   IMAP_USER=info@ditecsisjon.se
-   IMAP_PASSWORD=ditt-lösenord
+   IMAP_USER=offert.ditec@gmail.com
+   IMAP_PASSWORD=app-lösenordet-16-tecken
    IMAP_MAILBOX=INBOX
    MAIL_FETCH_LIMIT=40
+
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=465
+   SMTP_SECURE=true
+   SMTP_FROM=offert.ditec@gmail.com
    ```
-2. Starta om appen (`npm run dev`). Inkorgen hämtar nu de senaste mejlen
-   automatiskt vid start, och du kan uppdatera manuellt med
-   ↻-knappen bredvid "Alla konversationer".
+4. Starta om appen (`npm run dev`). Inkorgen hämtar de senaste mejlen automatiskt
+   vid start; uppdatera manuellt med ↻-knappen bredvid "Alla konversationer".
 
 Varje inkommet mejl körs genom kategoriseringen (offert/bokning/konsultation/
-övrigt) och regnummer plockas automatiskt ur texten för fordonsuppslaget.
+övrigt) och regnummer plockas automatiskt ur texten för fordonsuppslaget. Svar
+och uppföljningar skickas via samma app-lösenord (SMTP). Utan konfiguration
+körs appen i demoläge med exempeldata.
 
-**Säkerhet:** `.env.local` är gitignore:at – lösenordet hamnar aldrig i koden.
-Kör helst appen på en egen server/dator, inte som statisk sajt, eftersom IMAP
-sker på serversidan. Se `src/lib/mail.ts` och `src/app/api/mail/sync/route.ts`.
-Källa för serverinställningar: Websupports kunskapsdatabas.
-
-### Skicka svar via SMTP
-Svar och uppföljningar skickas direkt via `smtp.websupport.se:465` när SMTP är
-konfigurerat (använder IMAP-uppgifterna om inget separat anges). Utan
-konfiguration registreras svaret lokalt (demoläge). Se `src/lib/mailer.ts` och
-`src/app/api/mail/send/route.ts`.
+**Säkerhet:** `.env.local` är gitignore:at – app-lösenordet hamnar aldrig i
+koden och kan återkallas när som helst på apppasswords-sidan. IMAP/SMTP sker på
+serversidan, så kör appen som en riktig server (inte statisk sajt). Se
+`src/lib/mail.ts`, `src/lib/mailer.ts` och `src/app/api/mail/*`.
 
 > **Ny på Windows?** Följ den enkla steg-för-steg-guiden i **[SETUP.md](SETUP.md)**
 > – dubbelklicka på `start.bat` så installeras och startas allt automatiskt.
 
-## Steg 3 – koppla din riktiga Gmail (alternativ till IMAP)
-
-Idag använder appen exempeldata från `src/lib/sample-data.ts`. För att läsa in
-riktiga mejl från `jobb.ditec@gmail.com`:
-
-1. Gå till <https://console.cloud.google.com/> → skapa ett projekt.
-2. **Aktivera Gmail API** (APIs & Services → Library → Gmail API).
-3. Skapa **OAuth-uppgifter** (OAuth client ID, typ "Web application") och lägg
-   till `http://localhost:3000/api/gmail/callback` som redirect-URI.
-4. Fyll i `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` och `GOOGLE_REDIRECT_URI` i
-   `.env.local`.
-5. Bygg ut med:
-   - `/api/gmail/auth` och `/api/gmail/callback` för OAuth-inloggning.
-   - En funktion som hämtar mejl (`users.messages.list` / `.get`) och kör varje
-     mejl genom `/api/classify`.
-   - Byt ut `generateLeads()` i `src/lib/store.tsx` mot de inlästa mejlen.
-
-Läskoppling räcker för överblick och kategorisering. Vill du även **skicka**
-uppföljningar direkt från appen behövs `gmail.send`-scope och ett anrop till
-`users.messages.send` i "Markera som skickad"-knappen (`src/app/follow-up/page.tsx`).
-Idag öppnas i stället ett förifyllt mejl i ditt vanliga e-postprogram via
-"Öppna i e-postprogram".
+> **Alternativ – Websupport eller annan e-post:** appen fungerar med vilken
+> IMAP/SMTP-brevlåda som helst. Byt bara `IMAP_HOST`/`SMTP_HOST` (t.ex.
+> `imap.websupport.se` / `smtp.websupport.se`) och använd brevlådans lösenord.
 
 ## Teknik
 

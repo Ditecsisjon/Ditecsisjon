@@ -18,7 +18,7 @@ export function readSmtpConfig(): SmtpConfig | null {
   const pass = process.env.SMTP_PASSWORD || process.env.IMAP_PASSWORD;
   if (!user || !pass) return null;
   return {
-    host: process.env.SMTP_HOST || "smtp.websupport.se",
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
     port: Number(process.env.SMTP_PORT || 465),
     secure: (process.env.SMTP_SECURE ?? "true") !== "false",
     user,
