@@ -20,6 +20,7 @@ import {
   Mail,
   StickyNote,
   CircleCheck,
+  MailOpen,
 } from "lucide-react";
 import { useLeads } from "@/lib/store";
 import {
@@ -381,7 +382,8 @@ function ConversationItem({
 
 function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { history, reminders, handled, addHistory, setReminder, toggleHandled } = useLeads();
+  const { history, reminders, handled, addHistory, setReminder, toggleHandled, markUnread } =
+    useLeads();
   const [panel, setPanel] = useState<null | "historik" | "paminnelse">(null);
 
   const key = leadKey(lead);
@@ -438,6 +440,9 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
             onClick={() => toggleHandled(key)}
           >
             <CircleCheck size={18} className={isHandled ? "text-emerald-600" : ""} />
+          </IconBtn>
+          <IconBtn title="Markera som oläst" onClick={() => markUnread(lead.id)}>
+            <MailOpen size={18} />
           </IconBtn>
           <IconBtn title="Stjärnmärk">
             <Star size={18} />

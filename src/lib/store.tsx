@@ -57,6 +57,7 @@ interface LeadsContextValue {
   markFollowUpSent: (id: string) => void;
   markAnswered: (id: string) => void;
   markRead: (id: string) => void;
+  markUnread: (id: string) => void;
   sendMessage: (id: string, body: string, attachments?: string[]) => void;
   syncFromMail: () => Promise<void>;
   addHistory: (key: string, type: HistoryType, text: string) => void;
@@ -299,6 +300,10 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       markRead: (id) =>
         setLeads((prev) =>
           prev.map((l) => (l.id === id ? { ...l, unread: false } : l))
+        ),
+      markUnread: (id) =>
+        setLeads((prev) =>
+          prev.map((l) => (l.id === id ? { ...l, unread: true } : l))
         ),
       sendMessage: (id, body, attachments) => {
         const at = new Date().toISOString();
