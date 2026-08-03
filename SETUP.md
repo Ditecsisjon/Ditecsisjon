@@ -92,6 +92,7 @@ fönstret och dubbelklicka på `start.bat` igen så laddas lösenordet in.
 | Inga riktiga mejl syns (bara demo) | Kontrollera att `IMAP_PASSWORD` är ifyllt och sparat i `.env.local`, starta om (stäng svarta fönstret → dubbelklicka `start.bat`). |
 | "Kunde inte hämta mejl" / inloggning nekas | Dubbelkolla lösenordet till info@-brevlådan och att adressen är `info@ditecsisjon.se`. |
 | För mycket brus (nyhetsbrev/fakturor) | Använd filtret uppe till vänster → "Affärer (dölj övrigt)". |
+| "missing required error components, refreshing…" | Stäng svarta fönstret, radera mappen `.next` i appmappen, dubbelklicka `start.bat` igen och tryck Ctrl+F5 i webbläsaren. |
 | Webbläsaren visar inget | Vänta 10–20 sek efter start, ladda om sidan (F5). |
 
 Behöver du hjälp? Hör av dig så löser vi det tillsammans.
