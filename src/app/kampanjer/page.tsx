@@ -8,6 +8,7 @@ import {
   Check,
   Loader2,
   Trophy,
+  RefreshCw,
 } from "lucide-react";
 import { useCampaign } from "@/lib/useCampaign";
 import {
@@ -16,6 +17,7 @@ import {
   needsReminder,
   variantStats,
   recipientSize,
+  classifyReply,
   REPLY_LABEL,
   type Recipient,
   type ReplyType,
@@ -45,8 +47,17 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default function CampaignPage() {
-  const { loaded, recipients, settings, setSettings, markSent, setReply, update, importDobs } =
-    useCampaign();
+  const {
+    loaded,
+    recipients,
+    settings,
+    setSettings,
+    markSent,
+    setReply,
+    update,
+    importDobs,
+    refresh,
+  } = useCampaign();
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -107,6 +118,13 @@ export default function CampaignPage() {
         subtitle="Kalla in kunder för återbehandling av lackskydd, testa meddelanden och följ resultatet"
         action={
           <div className="flex gap-2">
+            <button
+              onClick={refresh}
+              title="Hämta uppdateringar (t.ex. inkomna SMS-svar)"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <RefreshCw size={15} /> Uppdatera
+            </button>
             <button
               onClick={importDobs}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
@@ -312,6 +330,7 @@ export default function CampaignPage() {
                     onSend={() => doSend(r)}
                     onRemind={() => doSend(r, true)}
                     onReply={(rt) => setReply(r.id, rt)}
+                    onClassify={(text) => setReply(r.id, classifyReply(text))}
                     onSendAuto={() => sendAutoReply(r)}
                     needsRem={needsReminder(r, settings)}
                   />
@@ -336,6 +355,7 @@ function RecipientRow({
   onSend,
   onRemind,
   onReply,
+  onClassify,
   onSendAuto,
   needsRem,
 }: {
@@ -345,6 +365,7 @@ function RecipientRow({
   onSend: () => void;
   onRemind: () => void;
   onReply: (rt: ReplyType) => void;
+  onClassify: (text: string) => void;
   onSendAuto: () => void;
   needsRem: boolean;
 }) {
@@ -386,6 +407,18 @@ function RecipientRow({
               </option>
             ))}
           </select>
+          <input
+            placeholder="Klistra in kundens SMS…"
+            title="Tolkas automatiskt till rätt svarstyp"
+            onKeyDown={(e) => {
+              const val = (e.target as HTMLInputElement).value.trim();
+              if (e.key === "Enter" && val) {
+                onClassify(val);
+                (e.target as HTMLInputElement).value = "";
+              }
+            }}
+            className="mt-1 w-40 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:border-brand-500 focus:outline-none"
+          />
         </td>
         <td className="px-4 py-3">
           {r.status === "ny" ? (

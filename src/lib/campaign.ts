@@ -40,6 +40,17 @@ export interface CampaignSettings {
   soldDiscountPercent: number;
 }
 
+/** Tolkar en fritextinkommande SMS till ett svarstyp. */
+export function classifyReply(text: string): ReplyType {
+  const t = text.toLowerCase();
+  if (/\b(sål|sålt|sålde|sålj|bytt bil|köpt ny|ny bil|skrota|bytte bil)/.test(t)) return "sald";
+  if (/(pris|kostar|kostnad|vad blir|hur mycket|offert|vad kostar)/.test(t)) return "fraga_pris";
+  if (/\b(nej|inte intresse|avstår|inte aktuell|nej tack|avboka|avbeställ)/.test(t)) return "nej";
+  if (/\b(ja|japp|absolut|boka|gärna|visst|okej|ok|kör på|vill boka|jajemen)\b/.test(t))
+    return "ja";
+  return "fundering";
+}
+
 export const REPLY_LABEL: Record<ReplyType, string> = {
   ja: "Vill boka",
   nej: "Nej tack",

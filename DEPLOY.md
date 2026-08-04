@@ -52,6 +52,18 @@ app-lösenord.)
 När appen förbättras uppdateras webbadressen **automatiskt** (Vercel bygger om
 vid varje ändring i repot). Du behöver inte göra något.
 
+## Automatiska SMS-svar (inkommande)
+
+För att kundernas SMS-svar ska tolkas och besvaras automatiskt:
+1. Koppla en SMS-tjänst (46elks) via `SMS_API_USERNAME` / `SMS_API_PASSWORD` / `SMS_FROM`.
+2. Ange webhook-URL hos SMS-tjänsten (46elks: "SMS callback"):
+   `https://din-app-adress/api/sms/inbound`
+3. Öppna kampanjvyn en gång så speglas listan till servern (krävs för matchning).
+
+Då tolkas inkommande svar automatiskt (ja / nej / frågar pris / bilen såld /
+fundering) och rätt auto-svar skickas. Klicka **Uppdatera** i kampanjvyn för att
+se de inkomna svaren. (Kräver att appen är nåbar från internet – dvs hostad.)
+
 ## Bra att veta
 - **Säkerhet:** appen är låst med ditt `APP_PASSWORD`. Dela inte adressen +
   lösenordet med obehöriga. Lösenorden ligger som miljövariabler hos Vercel,

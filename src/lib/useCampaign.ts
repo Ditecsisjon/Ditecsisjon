@@ -37,6 +37,33 @@ export function useCampaign() {
     if (loaded) localStorage.setItem(SET_KEY, JSON.stringify(settings));
   }, [settings, loaded]);
 
+  // Spegla till servern (så inkommande SMS-webhook kan matcha kunder)
+  useEffect(() => {
+    if (!loaded) return;
+    const id = setTimeout(() => {
+      fetch("/api/campaign/state", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ recipients, settings }),
+      }).catch(() => {});
+    }, 800);
+    return () => clearTimeout(id);
+  }, [recipients, settings, loaded]);
+
+  // Hämta serverns status (t.ex. efter inkommande SMS)
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch("/api/campaign/state");
+      const data = await res.json();
+      if (Array.isArray(data.recipients) && data.recipients.length) {
+        setRecipients(data.recipients);
+        if (data.settings) setSettings(data.settings);
+      }
+    } catch {
+      /* ignorera */
+    }
+  }, []);
+
   const update = useCallback((id: string, patch: Partial<Recipient>) => {
     setRecipients((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   }, []);
@@ -77,5 +104,6 @@ export function useCampaign() {
     markSent,
     setReply,
     importDobs,
+    refresh,
   };
 }
