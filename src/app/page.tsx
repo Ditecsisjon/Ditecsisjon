@@ -929,7 +929,7 @@ function Composer({
   body: string;
   setBody: React.Dispatch<React.SetStateAction<string>>;
 }) {
-  const { sendMessage } = useLeads();
+  const { sendMessage, templates } = useLeads();
   const [subject, setSubject] = useState(`Re: ${lead.subject}`);
   const [files, setFiles] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
@@ -1031,7 +1031,7 @@ function Composer({
           <div className="flex items-center gap-1 text-slate-400">
             <button
               title="Förslag på svarstext"
-              onClick={() => setBody(suggestReply(lead))}
+              onClick={() => setBody(suggestReply(lead, templates))}
               className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50"
             >
               <Wand2 size={17} /> Förslag

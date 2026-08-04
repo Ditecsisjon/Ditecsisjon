@@ -11,6 +11,7 @@ import {
   Send,
   X,
   LogOut,
+  Wand2,
 } from "lucide-react";
 
 const NAV = [
@@ -18,6 +19,7 @@ const NAV = [
   { href: "/oversikt", label: "Översikt", icon: LayoutDashboard },
   { href: "/pipeline", label: "Pipeline", icon: KanbanSquare },
   { href: "/follow-up", label: "Uppföljningar", icon: Send },
+  { href: "/mallar", label: "Svarsmallar", icon: Wand2 },
 ];
 
 /** Diskret flytande meny för att nå appens vyer utan fast sidomeny. */
