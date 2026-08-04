@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Send,
   Download,
+  Upload,
   MessageSquare,
   Check,
   Loader2,
@@ -60,11 +61,22 @@ export default function CampaignPage() {
     setReply,
     update,
     importDobs,
+    importCsv,
     refresh,
   } = useCampaign();
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const text = await file.text();
+    const n = importCsv(text);
+    setStatus(n ? `Importerade ${n} kunder från filen.` : "Kunde inte läsa filen (kontrollera formatet).");
+  }
 
   if (!loaded) return <Loading />;
 
@@ -135,6 +147,20 @@ export default function CampaignPage() {
             >
               <Download size={15} /> Importera DOBS-lista
             </button>
+            <button
+              onClick={() => fileRef.current?.click()}
+              title="Ladda upp DOBS-export (CSV)"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <Upload size={15} /> Importera fil (CSV)
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,text/csv"
+              hidden
+              onChange={onFile}
+            />
             <button
               onClick={sendAllPending}
               disabled={pendingCount === 0 || !!busy}

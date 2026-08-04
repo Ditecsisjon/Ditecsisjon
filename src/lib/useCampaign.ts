@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   DEFAULT_SETTINGS,
   sampleDobsList,
+  parseCsvToRecipients,
   type CampaignSettings,
   type Recipient,
   type ReplyType,
@@ -107,6 +108,12 @@ export function useCampaign() {
     setRecipients(sampleDobsList());
   }, []);
 
+  const importCsv = useCallback((text: string): number => {
+    const parsed = parseCsvToRecipients(text);
+    if (parsed.length) setRecipients(parsed);
+    return parsed.length;
+  }, []);
+
   return {
     loaded,
     recipients,
@@ -116,6 +123,7 @@ export function useCampaign() {
     markSent,
     setReply,
     importDobs,
+    importCsv,
     refresh,
   };
 }

@@ -239,6 +239,75 @@ function daysAgo(days: number): string {
   return d.toISOString();
 }
 
+/** Tolkar en coating-text (från DOBS/CSV) till vår typ. */
+function parseCoating(raw: string): Coating {
+  const s = raw.toLowerCase();
+  if (s.includes("ultra")) return "ceramic_ultra";
+  if (s.includes("light") || s.includes("light+")) return "ceramic_light_plus";
+  if (s.includes("original") || s.includes("topcoat")) return "ditec_original";
+  if (s.includes("ceramic")) return "ceramic_light_plus";
+  return "ceramic_light_plus";
+}
+
+function parseDate(raw: string): string {
+  const t = raw.trim();
+  const d = new Date(t);
+  if (!isNaN(d.getTime())) return d.toISOString();
+  // DD/MM/YYYY eller DD-MM-YYYY
+  const m = t.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
+  if (m) {
+    const y = m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]);
+    const dt = new Date(y, Number(m[2]) - 1, Number(m[1]));
+    if (!isNaN(dt.getTime())) return dt.toISOString();
+  }
+  const fallback = new Date();
+  fallback.setDate(fallback.getDate() - 400);
+  return fallback.toISOString();
+}
+
+/**
+ * Tolkar en CSV-export (från DOBS/Excel) till mottagare. Kolumnrubriker
+ * (svenska eller engelska) matchas flexibelt. Stödjer , eller ; som avgränsare.
+ */
+export function parseCsvToRecipients(text: string): Recipient[] {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) return [];
+  const delim = lines[0].includes(";") ? ";" : ",";
+  const split = (l: string) => l.split(delim).map((c) => c.trim().replace(/^"|"$/g, ""));
+  const headers = split(lines[0]).map((h) => h.toLowerCase());
+
+  const idx = (names: string[]) => headers.findIndex((h) => names.some((n) => h.includes(n)));
+  const iName = idx(["namn", "name", "kund"]);
+  const iPhone = idx(["telefon", "phone", "mobil", "tel"]);
+  const iRegnr = idx(["regnr", "reg", "registreringsnummer"]);
+  const iCar = idx(["bil", "car", "fordon", "modell"]);
+  const iSize = idx(["längd", "langd", "size", "mm"]);
+  const iService = idx(["tjänst", "tjanst", "service", "behandling"]);
+  const iCoating = idx(["lackskydd", "coating", "skydd", "produkt"]);
+  const iLast = idx(["senaste", "last", "datum", "behandlad"]);
+
+  const out: Recipient[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const c = split(lines[i]);
+    const regnr = (iRegnr >= 0 ? c[iRegnr] : "") || `rad${i}`;
+    out.push({
+      id: regnr,
+      name: iName >= 0 ? c[iName] : "Okänd",
+      phone: iPhone >= 0 ? c[iPhone] : "",
+      regnr,
+      car: iCar >= 0 ? c[iCar] : "",
+      sizeMm: iSize >= 0 && c[iSize] ? Number(c[iSize].replace(/\D/g, "")) || undefined : undefined,
+      service: iService >= 0 && c[iService] ? c[iService] : "Lackskydd",
+      coating: parseCoating(iCoating >= 0 ? c[iCoating] : ""),
+      lastTreatment: iLast >= 0 && c[iLast] ? parseDate(c[iLast]) : parseDate(""),
+      variant: i % 2 === 0 ? "A" : "B",
+      status: "ny",
+      remindersSent: 0,
+    });
+  }
+  return out;
+}
+
 /** Demolista som om den kom från DOBS (kunder med lackskydd för återbehandling). */
 export function sampleDobsList(): Recipient[] {
   const base: Omit<Recipient, "id" | "variant" | "status" | "remindersSent">[] = [
