@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Wrench, RefreshCw } from "lucide-react";
+import { Wrench, RefreshCw, Pencil, Plus, Trash2, Save, X } from "lucide-react";
 import { PageHeader, StatCard, Loading } from "@/components/ui";
 import type { Technician, WeekSchedule } from "@/lib/planner";
 
@@ -24,6 +24,7 @@ function loadColor(booked: number, total: number): string {
 export default function VerkstadPage() {
   const [info, setInfo] = useState<Info | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -75,12 +76,20 @@ export default function VerkstadPage() {
             : "Live från verkstadsplaneraren"
         }
         action={
-          <button
-            onClick={load}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            <RefreshCw size={15} /> Uppdatera
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setEditing((v) => !v)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <Pencil size={15} /> {editing ? "Stäng redigering" : "Redigera tekniker"}
+            </button>
+            <button
+              onClick={load}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <RefreshCw size={15} /> Uppdatera
+            </button>
+          </div>
         }
       />
 
@@ -92,6 +101,19 @@ export default function VerkstadPage() {
           <StatCard label="Lediga pass (v)" value={total - booked} accent="text-emerald-600" />
           <StatCard label="Bokade pass (v)" value={booked} accent="text-amber-600" />
         </div>
+
+        {/* Redigera tekniker */}
+        {editing ? (
+          <TechnicianEditor
+            initial={technicians}
+            competenceLabels={competenceLabels}
+            onCancel={() => setEditing(false)}
+            onSaved={() => {
+              setEditing(false);
+              load();
+            }}
+          />
+        ) : null}
 
         {/* Tekniker & kompetenser */}
         <section>
@@ -193,5 +215,130 @@ export default function VerkstadPage() {
         </section>
       </div>
     </>
+  );
+}
+
+function TechnicianEditor({
+  initial,
+  competenceLabels,
+  onCancel,
+  onSaved,
+}: {
+  initial: Technician[];
+  competenceLabels: Record<string, string>;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const [techs, setTechs] = useState<Technician[]>(() =>
+    initial.map((t) => ({ ...t, competences: [...t.competences] }))
+  );
+  const [saving, setSaving] = useState(false);
+  const allComps = Object.keys(competenceLabels);
+
+  function update(i: number, patch: Partial<Technician>) {
+    setTechs((prev) => prev.map((t, j) => (j === i ? { ...t, ...patch } : t)));
+  }
+  function toggleComp(i: number, c: string) {
+    setTechs((prev) =>
+      prev.map((t, j) =>
+        j === i
+          ? {
+              ...t,
+              competences: t.competences.includes(c)
+                ? t.competences.filter((x) => x !== c)
+                : [...t.competences, c],
+            }
+          : t
+      )
+    );
+  }
+  function add() {
+    setTechs((prev) => [
+      ...prev,
+      { id: `t${Date.now()}`, name: "Ny tekniker", competences: [] },
+    ]);
+  }
+  function remove(i: number) {
+    setTechs((prev) => prev.filter((_, j) => j !== i));
+  }
+  async function save() {
+    setSaving(true);
+    try {
+      await fetch("/api/planner/technicians", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ technicians: techs }),
+      });
+      onSaved();
+    } catch {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="rounded-xl border border-brand-200 bg-brand-50/40 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-slate-700">Redigera tekniker & kompetenser</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={add}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+          >
+            <Plus size={13} /> Lägg till tekniker
+          </button>
+          <button
+            onClick={onCancel}
+            className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-white"
+          >
+            <X size={13} /> Avbryt
+          </button>
+          <button
+            onClick={save}
+            disabled={saving}
+            className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          >
+            <Save size={13} /> {saving ? "Sparar…" : "Spara"}
+          </button>
+        </div>
+      </div>
+      <div className="space-y-3">
+        {techs.map((t, i) => (
+          <div key={t.id} className="rounded-lg border border-slate-200 bg-white p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <input
+                value={t.name}
+                onChange={(e) => update(i, { name: e.target.value })}
+                className="w-56 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-medium focus:border-brand-500 focus:outline-none"
+              />
+              <button
+                onClick={() => remove(i)}
+                title="Ta bort"
+                className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {allComps.map((c) => {
+                const on = t.competences.includes(c);
+                return (
+                  <button
+                    key={c}
+                    onClick={() => toggleComp(i, c)}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                      on
+                        ? "bg-brand-600 text-white"
+                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    }`}
+                  >
+                    {competenceLabels[c] ?? c}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

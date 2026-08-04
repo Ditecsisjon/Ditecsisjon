@@ -12,6 +12,7 @@ import {
   suggestSlots,
   COMPETENCE_LABEL,
 } from "@/lib/planner";
+import { readTechnicians } from "@/lib/plannerStore.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,11 +56,12 @@ export async function POST(request: Request) {
     }
   }
 
-  // Demoläge
-  const requested = checkRequested(requestedISO, competence);
+  // Demoläge (med era sparade tekniker)
+  const techs = await readTechnicians();
+  const requested = checkRequested(requestedISO, competence, techs);
   const suggestions = requested.available
     ? []
-    : suggestSlots(requestedISO, competence, 2);
+    : suggestSlots(requestedISO, competence, 2, techs);
 
   return NextResponse.json({
     source: "demo",

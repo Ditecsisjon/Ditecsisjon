@@ -3,7 +3,8 @@
 // (+ ev. PLANNER_API_KEY) så hämtas det från verkstadsplaneraren.
 
 import { NextResponse } from "next/server";
-import { TECHNICIANS, getWeekSchedule, COMPETENCE_LABEL } from "@/lib/planner";
+import { getWeekSchedule, COMPETENCE_LABEL } from "@/lib/planner";
+import { readTechnicians } from "@/lib/plannerStore.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,10 +26,11 @@ export async function GET() {
       // faller tillbaka på demo
     }
   }
+  const technicians = await readTechnicians();
   return NextResponse.json({
     source: "demo",
-    technicians: TECHNICIANS,
+    technicians,
     competenceLabels: COMPETENCE_LABEL,
-    week: getWeekSchedule(new Date().toISOString()),
+    week: getWeekSchedule(new Date().toISOString(), technicians),
   });
 }

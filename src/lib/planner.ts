@@ -70,8 +70,8 @@ function isWorkday(d: Date): boolean {
   return day >= 1 && day <= 5;
 }
 
-function competentTechs(competence: string): Technician[] {
-  return TECHNICIANS.filter((t) => t.competences.includes(competence));
+function competentTechs(competence: string, techs: Technician[] = TECHNICIANS): Technician[] {
+  return techs.filter((t) => t.competences.includes(competence));
 }
 
 /** Vilket pass en tidpunkt hör till (0–2), eller null om utanför öppettid. */
@@ -103,14 +103,15 @@ function dateLabel(d: Date): string {
 /** Kollar om en önskad tid är ledig hos någon kompetent tekniker. */
 export function checkRequested(
   requestedISO: string,
-  competence: string
+  competence: string,
+  techs: Technician[] = TECHNICIANS
 ): { available: boolean; technician?: string; dateLabel: string; slotLabel: string } {
   const d = new Date(requestedISO);
   const slot = isWorkday(d) ? slotForHour(d.getHours()) : null;
   if (slot === null) {
     return { available: false, dateLabel: dateLabel(d), slotLabel: "utanför öppettid" };
   }
-  const free = competentTechs(competence).find((t) => !isBusy(t.id, d, slot));
+  const free = competentTechs(competence, techs).find((t) => !isBusy(t.id, d, slot));
   return {
     available: !!free,
     technician: free?.name,
@@ -120,8 +121,13 @@ export function checkRequested(
 }
 
 /** Föreslår de närmaste lediga passen (default 2) från en startpunkt. */
-export function suggestSlots(fromISO: string, competence: string, count = 2): SlotResult[] {
-  const techs = competentTechs(competence);
+export function suggestSlots(
+  fromISO: string,
+  competence: string,
+  count = 2,
+  allTechs: Technician[] = TECHNICIANS
+): SlotResult[] {
+  const techs = competentTechs(competence, allTechs);
   const out: SlotResult[] = [];
   const cursor = new Date(fromISO);
   cursor.setHours(0, 0, 0, 0);
@@ -217,7 +223,10 @@ export interface WeekSchedule {
 }
 
 /** Bygger ett veckoschema (5 arbetsdagar) med beläggning per tekniker. */
-export function getWeekSchedule(fromISO: string): WeekSchedule {
+export function getWeekSchedule(
+  fromISO: string,
+  techs: Technician[] = TECHNICIANS
+): WeekSchedule {
   const days: DaySchedule[] = [];
   const cursor = new Date(fromISO);
   cursor.setHours(0, 0, 0, 0);
@@ -233,7 +242,7 @@ export function getWeekSchedule(fromISO: string): WeekSchedule {
     });
   }
   const grid: WeekSchedule["grid"] = {};
-  for (const t of TECHNICIANS) {
+  for (const t of techs) {
     grid[t.id] = {};
     for (const day of days) {
       const d = new Date(day.dateISO);
