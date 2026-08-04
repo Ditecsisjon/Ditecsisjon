@@ -18,11 +18,15 @@ import {
   variantStats,
   recipientSize,
   classifyReply,
+  retreatmentType,
+  isDue,
+  RETREATMENT_INFO,
+  COATING_LABEL,
   REPLY_LABEL,
   type Recipient,
   type ReplyType,
 } from "@/lib/campaign";
-import { SIZE_LABEL } from "@/lib/pricing";
+import { SIZE_LABEL, SIZE_ORDER, type CarSize } from "@/lib/pricing";
 import { PageHeader, StatCard, Loading } from "@/components/ui";
 
 async function sendSms(to: string, message: string) {
@@ -236,7 +240,7 @@ export default function CampaignPage() {
               </div>
               <div className="text-xs text-slate-400">
                 Platshållare: <code>{"{fornamn}"}</code>, <code>{"{bil}"}</code>,{" "}
-                <code>{"{regnr}"}</code>
+                <code>{"{regnr}"}</code>, <code>{"{behandling}"}</code>
               </div>
               <div className="flex flex-wrap items-center gap-6">
                 <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -291,6 +295,32 @@ export default function CampaignPage() {
                   Auto-svar med pris
                 </label>
               </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <PriceGrid
+                  title="Ceramic underhåll (12 mån) – pris per storlek"
+                  prices={settings.ceramicPrices}
+                  onChange={(size, val) =>
+                    setSettings({
+                      ...settings,
+                      ceramicPrices: { ...settings.ceramicPrices, [size]: val },
+                    })
+                  }
+                />
+                <PriceGrid
+                  title="Topcoat (18 mån) – pris per storlek"
+                  prices={settings.topcoatPrices}
+                  onChange={(size, val) =>
+                    setSettings({
+                      ...settings,
+                      topcoatPrices: { ...settings.topcoatPrices, [size]: val },
+                    })
+                  }
+                />
+              </div>
+              <div className="text-xs text-slate-400">
+                Fyll i era priser från Configurator (per bilstorlek).
+              </div>
             </div>
           ) : null}
         </div>
@@ -314,6 +344,7 @@ export default function CampaignPage() {
                   <th className="px-4 py-2 font-medium">Kund</th>
                   <th className="px-4 py-2 font-medium">Bil</th>
                   <th className="px-4 py-2 font-medium">Storlek</th>
+                  <th className="px-4 py-2 font-medium">Behandling</th>
                   <th className="px-4 py-2 font-medium">Variant</th>
                   <th className="px-4 py-2 font-medium">Status</th>
                   <th className="px-4 py-2 font-medium">Svar</th>
@@ -345,6 +376,39 @@ export default function CampaignPage() {
         </div>
       </div>
     </>
+  );
+}
+
+function PriceGrid({
+  title,
+  prices,
+  onChange,
+}: {
+  title: string;
+  prices: Record<CarSize, number>;
+  onChange: (size: CarSize, val: number) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 p-3">
+      <div className="mb-2 text-xs font-medium text-slate-600">{title}</div>
+      <div className="grid grid-cols-2 gap-2">
+        {SIZE_ORDER.map((size) => (
+          <label key={size} className="flex items-center justify-between gap-2 text-xs">
+            <span className="text-slate-500">{SIZE_LABEL[size]}</span>
+            <span className="flex items-center gap-1">
+              <input
+                type="number"
+                min={0}
+                value={prices[size]}
+                onChange={(e) => onChange(size, Number(e.target.value) || 0)}
+                className="w-20 rounded border border-slate-300 px-2 py-1 text-right"
+              />
+              <span className="text-slate-400">kr</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -382,6 +446,19 @@ function RecipientRow({
           <div className="text-xs text-slate-400">{r.regnr}</div>
         </td>
         <td className="px-4 py-3 text-slate-600">{SIZE_LABEL[recipientSize(r)]}</td>
+        <td className="px-4 py-3">
+          <div className="text-slate-700">
+            {RETREATMENT_INFO[retreatmentType(r.coating)].label}
+          </div>
+          <div className="text-xs text-slate-400">
+            {COATING_LABEL[r.coating]}
+            {isDue(r) ? (
+              <span className="ml-1 rounded bg-amber-100 px-1 py-0.5 text-[10px] font-medium text-amber-700">
+                Dags
+              </span>
+            ) : null}
+          </div>
+        </td>
         <td className="px-4 py-3">
           <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600">
             {r.variant}
@@ -444,7 +521,7 @@ function RecipientRow({
       </tr>
       {r.reply && auto ? (
         <tr className="border-b border-slate-100 bg-violet-50/50">
-          <td colSpan={7} className="px-4 py-3">
+          <td colSpan={8} className="px-4 py-3">
             <div className="flex items-start gap-2">
               <MessageSquare size={15} className="mt-0.5 shrink-0 text-violet-500" />
               <div className="flex-1">

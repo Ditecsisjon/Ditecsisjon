@@ -13,6 +13,42 @@ export type ReplyType = "ja" | "nej" | "fraga_pris" | "sald" | "fundering";
 
 export type RecipientStatus = "ny" | "skickat" | "svarat";
 
+/** Vilket lackskydd bilen har (styr typ av återbehandling). */
+export type Coating = "ceramic_light_plus" | "ceramic_ultra" | "ditec_original";
+
+export const COATING_LABEL: Record<Coating, string> = {
+  ceramic_light_plus: "Ditec Ceramic Light+",
+  ceramic_ultra: "Ditec Ceramic Ultra",
+  ditec_original: "Ditec Original",
+};
+
+/** De två återbehandlingstyperna. */
+export type RetreatmentType = "ceramic_underhall" | "topcoat";
+
+export const RETREATMENT_INFO: Record<
+  RetreatmentType,
+  { label: string; intervalMonths: number; describe: string; includes: string }
+> = {
+  ceramic_underhall: {
+    label: "Ceramic underhåll",
+    intervalMonths: 12,
+    describe:
+      "underhållsbehandling som förnyar ditt keramiska lackskydd (Ceramic Light+/Ultra)",
+    includes: "tvätt, dekontaminering och ny keramisk booster",
+  },
+  topcoat: {
+    label: "Topcoat",
+    intervalMonths: 18,
+    describe: "återbehandling (Topcoat) som förnyar ditt Ditec Original-lackskydd",
+    includes: "tvätt, dekontaminering och ny Topcoat-försegling",
+  },
+};
+
+/** Ceramic Light+/Ultra -> ceramic underhåll (12 mån), Original -> topcoat (18 mån). */
+export function retreatmentType(coating: Coating): RetreatmentType {
+  return coating === "ditec_original" ? "topcoat" : "ceramic_underhall";
+}
+
 export interface Recipient {
   id: string;
   name: string;
@@ -21,6 +57,7 @@ export interface Recipient {
   car: string; // t.ex. "Volvo XC60"
   sizeMm?: number; // för storlekslogik
   service: string; // vanligtvis "Lackskydd"
+  coating: Coating; // vilket lackskydd bilen har
   lastTreatment: string; // ISO – när senaste behandlingen gjordes
   variant: Variant;
   status: RecipientStatus;
@@ -38,6 +75,9 @@ export interface CampaignSettings {
   maxReminders: number;
   priceAuto: boolean;
   soldDiscountPercent: number;
+  /** Priser per bilstorlek – fyll i från Configurator */
+  ceramicPrices: Record<CarSize, number>;
+  topcoatPrices: Record<CarSize, number>;
 }
 
 /** Tolkar en fritextinkommande SMS till ett svarstyp. */
@@ -61,22 +101,18 @@ export const REPLY_LABEL: Record<ReplyType, string> = {
 
 export const DEFAULT_SETTINGS: CampaignSettings = {
   variantA:
-    "Hej {fornamn}! Dags för återbehandling av lackskyddet på din {bil}. Vi fräschar upp skyddet så bilen håller sig skinande och lättare att hålla ren. Vill du boka tid? Svara JA så föreslår vi tider. /Ditec Sisjön",
+    "Hej {fornamn}! Dags för {behandling} på din {bil}. Vi förnyar lackskyddet så bilen håller sig skinande och lättare att hålla ren. Vill du boka tid? Svara JA så föreslår vi tider. /Ditec Sisjön",
   variantB:
-    "Hej {fornamn}! Ditt lackskydd på {bil} är redo för sin årliga återbehandling ✨ Boka nu så håller lacken toppskick. Svara JA för lediga tider, eller PRIS för offert. /Ditec Sisjön",
+    "Hej {fornamn}! Ditt lackskydd på {bil} är redo för {behandling} ✨ Boka nu så håller lacken toppskick. Svara JA för lediga tider, eller PRIS för offert. /Ditec Sisjön",
   reminderDays: 4,
   maxReminders: 2,
   priceAuto: true,
   soldDiscountPercent: 20,
+  // Demopriser – ersätt med era priser från Configurator.
+  ceramicPrices: { liten: 1495, mellan: 1795, stor: 1995, xl: 2495 },
+  topcoatPrices: { liten: 1295, mellan: 1495, stor: 1795, xl: 2195 },
 };
 
-// Pris för återbehandling (billigare än nytt lackskydd) per storlek.
-const RETREATMENT_PRICE: Record<CarSize, number> = {
-  liten: 1200,
-  mellan: 1500,
-  stor: 1800,
-  xl: 2100,
-};
 // Nytt lackskydd (för såld bil / ny bil) per storlek.
 const NEW_TREATMENT_PRICE: Record<CarSize, number> = {
   liten: 4000,
@@ -103,12 +139,35 @@ export function recipientSize(r: Recipient): CarSize {
   return sizeFromLengthMm(r.sizeMm);
 }
 
+/** Pris för återbehandling utifrån bilens lackskydd och storlek. */
+export function retreatmentPrice(
+  s: CampaignSettings,
+  coating: Coating,
+  size: CarSize
+): number {
+  return retreatmentType(coating) === "topcoat"
+    ? s.topcoatPrices[size]
+    : s.ceramicPrices[size];
+}
+
+export function monthsSince(iso: string, now = new Date()): number {
+  const d = new Date(iso);
+  return (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+}
+
+/** Är bilen mogen för återbehandling (12 mån ceramic / 18 mån topcoat)? */
+export function isDue(r: Recipient, now = new Date()): boolean {
+  return monthsSince(r.lastTreatment, now) >= RETREATMENT_INFO[retreatmentType(r.coating)].intervalMonths;
+}
+
 /** Fyller i platshållare i ett SMS. */
 export function fillSms(tpl: string, r: Recipient): string {
+  const behandling = RETREATMENT_INFO[retreatmentType(r.coating)].label;
   return tpl
     .replace(/\{fornamn\}/g, firstName(r.name))
     .replace(/\{bil\}/g, r.car || r.regnr)
-    .replace(/\{regnr\}/g, r.regnr);
+    .replace(/\{regnr\}/g, r.regnr)
+    .replace(/\{behandling\}/g, behandling.toLowerCase());
 }
 
 export function messageFor(r: Recipient, s: CampaignSettings): string {
@@ -124,13 +183,14 @@ export function autoReply(r: Recipient, s: CampaignSettings): string {
     .join(" eller ");
   const tider = slots || "flera tider den kommande veckan";
 
+  const info = RETREATMENT_INFO[retreatmentType(r.coating)];
   switch (r.reply) {
     case "fraga_pris":
-      return `Hej ${name}! Återbehandlingen av lackskyddet på din ${r.car} (${SIZE_LABEL[
+      return `Hej ${name}! ${info.label} på din ${r.car} (${SIZE_LABEL[
         size
       ].toLowerCase()}) kostar ${kr(
-        RETREATMENT_PRICE[size]
-      )}. Då ingår tvätt, dekontaminering och ny topplack/booster som förnyar skyddet. Vi har ${tider}. Vill du att vi passar på med invändig rengöring samtidigt? (+${kr(
+        retreatmentPrice(s, r.coating, size)
+      )}. Det är en ${info.describe}, och då ingår ${info.includes}. Vi har ${tider}. Vill du att vi passar på med invändig rengöring samtidigt? (+${kr(
         INVANDIG_PRICE[size]
       )}). /Ditec Sisjön`;
     case "ja":
@@ -182,16 +242,16 @@ function daysAgo(days: number): string {
 /** Demolista som om den kom från DOBS (kunder med lackskydd för återbehandling). */
 export function sampleDobsList(): Recipient[] {
   const base: Omit<Recipient, "id" | "variant" | "status" | "remindersSent">[] = [
-    { name: "Anna Bergström", phone: "070-123 45 67", regnr: "JHK427", car: "Volvo XC60", sizeMm: 4688, service: "Lackskydd", lastTreatment: daysAgo(360) },
-    { name: "Johan Lind", phone: "0708-88 77 66", regnr: "MRT881", car: "VW Transporter", sizeMm: 4904, service: "Lackskydd", lastTreatment: daysAgo(372) },
-    { name: "Sara Nyström", phone: "073-222 11 00", regnr: "KLP092", car: "Volvo V60", sizeMm: 4761, service: "Lackskydd", lastTreatment: daysAgo(355) },
-    { name: "Peter Alm", phone: "031-22 33 44", regnr: "TRS334", car: "BMW 320d", sizeMm: 4709, service: "Lackskydd", lastTreatment: daysAgo(368) },
-    { name: "Camilla Ek", phone: "070-999 88 77", regnr: "SVL472", car: "Volvo V90", sizeMm: 4936, service: "Lackskydd", lastTreatment: daysAgo(361) },
-    { name: "Erik Sandberg", phone: "070-555 44 33", regnr: "BHT609", car: "Kia Ceed", sizeMm: 4600, service: "Lackskydd", lastTreatment: daysAgo(377) },
-    { name: "Sofia Ahmed", phone: "076-321 45 98", regnr: "MJP701", car: "Volvo V40", sizeMm: 4370, service: "Lackskydd", lastTreatment: daysAgo(359) },
-    { name: "Tomas Holm", phone: "070-410 20 30", regnr: "GRD338", car: "Nissan Qashqai", sizeMm: 4377, service: "Lackskydd", lastTreatment: daysAgo(380) },
-    { name: "Lena Fransson", phone: "070-611 22 33", regnr: "PNB540", car: "Toyota RAV4", sizeMm: 4600, service: "Lackskydd", lastTreatment: daysAgo(366) },
-    { name: "Mikael Öberg", phone: "073-555 12 34", regnr: "DFG215", car: "Audi A4", sizeMm: 4726, service: "Lackskydd", lastTreatment: daysAgo(358) },
+    { name: "Anna Bergström", phone: "070-123 45 67", regnr: "JHK427", car: "Volvo XC60", sizeMm: 4688, service: "Lackskydd", coating: "ceramic_ultra", lastTreatment: daysAgo(360) },
+    { name: "Johan Lind", phone: "0708-88 77 66", regnr: "MRT881", car: "VW Transporter", sizeMm: 4904, service: "Lackskydd", coating: "ditec_original", lastTreatment: daysAgo(560) },
+    { name: "Sara Nyström", phone: "073-222 11 00", regnr: "KLP092", car: "Volvo V60", sizeMm: 4761, service: "Lackskydd", coating: "ceramic_light_plus", lastTreatment: daysAgo(355) },
+    { name: "Peter Alm", phone: "031-22 33 44", regnr: "TRS334", car: "BMW 320d", sizeMm: 4709, service: "Lackskydd", coating: "ceramic_ultra", lastTreatment: daysAgo(368) },
+    { name: "Camilla Ek", phone: "070-999 88 77", regnr: "SVL472", car: "Volvo V90", sizeMm: 4936, service: "Lackskydd", coating: "ditec_original", lastTreatment: daysAgo(545) },
+    { name: "Erik Sandberg", phone: "070-555 44 33", regnr: "BHT609", car: "Kia Ceed", sizeMm: 4600, service: "Lackskydd", coating: "ceramic_light_plus", lastTreatment: daysAgo(377) },
+    { name: "Sofia Ahmed", phone: "076-321 45 98", regnr: "MJP701", car: "Volvo V40", sizeMm: 4370, service: "Lackskydd", coating: "ceramic_ultra", lastTreatment: daysAgo(359) },
+    { name: "Tomas Holm", phone: "070-410 20 30", regnr: "GRD338", car: "Nissan Qashqai", sizeMm: 4377, service: "Lackskydd", coating: "ditec_original", lastTreatment: daysAgo(570) },
+    { name: "Lena Fransson", phone: "070-611 22 33", regnr: "PNB540", car: "Toyota RAV4", sizeMm: 4600, service: "Lackskydd", coating: "ceramic_light_plus", lastTreatment: daysAgo(366) },
+    { name: "Mikael Öberg", phone: "073-555 12 34", regnr: "DFG215", car: "Audi A4", sizeMm: 4726, service: "Lackskydd", coating: "ceramic_ultra", lastTreatment: daysAgo(358) },
   ];
   return base.map((b, i) => ({
     ...b,
