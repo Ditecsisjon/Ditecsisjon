@@ -3,6 +3,7 @@
 // via sidan "Svarsmallar" – de sparas och används av "Förslag"-knappen.
 
 import type { Category, Lead } from "./types";
+import type { VehicleInfo } from "./vehicle";
 
 export const SIGNATURE = "Vänliga hälsningar,\nDitec Sisjön\nwww.ditecsisjon.com";
 
@@ -22,6 +23,9 @@ export const PLACEHOLDERS: { token: string; desc: string }[] = [
   { token: "{fornamn}", desc: "Kundens förnamn" },
   { token: "{tjanst}", desc: "Tjänsten ärendet gäller" },
   { token: "{regnr}", desc: "Registreringsnummer" },
+  { token: "{bilmarke}", desc: "Bilmärke & modell" },
+  { token: "{arsmodell}", desc: "Årsmodell" },
+  { token: "{farg}", desc: "Färg" },
   { token: "{signatur}", desc: "Din signatur" },
 ];
 
@@ -60,29 +64,43 @@ function firstName(fullName: string): string {
   return fullName.trim().split(" ")[0] || fullName;
 }
 
-/** Fyller i platshållare i en mall utifrån ärendet. */
-export function fillTemplate(tpl: string, lead: Lead): string {
+/** Fyller i platshållare i en mall utifrån ärendet (och ev. fordonsuppgifter). */
+export function fillTemplate(tpl: string, lead: Lead, vehicle?: VehicleInfo | null): string {
   const service = lead.service ? lead.service.toLowerCase() : "vår tjänst";
+  const bilmarke = vehicle
+    ? `${vehicle.brand} ${vehicle.model}`
+    : lead.regnr
+    ? `din bil (${lead.regnr})`
+    : "din bil";
   return tpl
     .replace(/\{fornamn\}/g, firstName(lead.from))
     .replace(/\{tjanst\}/g, service)
     .replace(/\{regnr\}/g, lead.regnr ?? "")
+    .replace(/\{bilmarke\}/g, bilmarke)
+    .replace(/\{arsmodell\}/g, vehicle?.modelYear ? String(vehicle.modelYear) : "")
+    .replace(/\{farg\}/g, vehicle?.color ?? "")
     .replace(/\{signatur\}/g, SIGNATURE)
     .replace(/[ \t]+\n/g, "\n"); // städa bort hängande mellanslag
 }
 
-/**
- * Väljer rätt mall: egen tjänst-mall först, sedan egen ärendetyp-mall, sist
- * standardmallen. Fyller sedan i platshållarna.
- */
-export function suggestReply(lead: Lead, custom: Record<string, string> = {}): string {
+/** Väljer rätt mall: egen tjänst-mall först, sedan ärendetyp-mall, sist standard. */
+export function pickTemplate(lead: Lead, custom: Record<string, string> = {}): string {
   const byService = lead.service ? custom[lead.service] : undefined;
   const byCategory = custom[lead.category];
-  const tpl =
+  return (
     (byService && byService.trim()) ||
     (byCategory && byCategory.trim()) ||
-    DEFAULT_TEMPLATES[lead.category];
-  return fillTemplate(tpl, lead);
+    DEFAULT_TEMPLATES[lead.category]
+  );
+}
+
+/** Färdigt mallförslag med ifyllda platshållare. */
+export function suggestReply(
+  lead: Lead,
+  custom: Record<string, string> = {},
+  vehicle?: VehicleInfo | null
+): string {
+  return fillTemplate(pickTemplate(lead, custom), lead, vehicle);
 }
 
 /** Standardtext för en automatisk påminnelse på en obesvarad offert. */

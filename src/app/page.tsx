@@ -22,6 +22,8 @@ import {
   CircleCheck,
   MailOpen,
   Calculator,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { useLeads } from "@/lib/store";
 import {
@@ -41,7 +43,7 @@ import {
   type VehicleInfo,
 } from "@/lib/vehicle";
 import { leadKey, customerResponded } from "@/lib/leadMeta";
-import { suggestReply, defaultReminderText } from "@/lib/suggest";
+import { suggestReply, pickTemplate, defaultReminderText } from "@/lib/suggest";
 import {
   TREATMENTS,
   SIZE_ORDER,
@@ -934,12 +936,74 @@ function Composer({
   const [files, setFiles] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const picked = Array.from(e.target.files ?? []).map((f) => f.name);
     if (picked.length) setFiles((prev) => [...prev, ...picked]);
     e.target.value = "";
+  }
+
+  async function fetchVehicle(): Promise<VehicleInfo | null> {
+    const rn = lead.regnr ?? findRegnrInText(lead.body) ?? "";
+    if (!rn || !isValidRegnr(rn)) return null;
+    try {
+      const res = await fetch(`/api/vehicle?regnr=${encodeURIComponent(normalizeRegnr(rn))}`);
+      const d = await res.json();
+      return d.error ? null : (d as VehicleInfo);
+    } catch {
+      return null;
+    }
+  }
+
+  // Snabbt mallförslag (med bildata ifylld)
+  async function fillSuggestion() {
+    setSuggesting(true);
+    setStatus(null);
+    const v = await fetchVehicle();
+    setBody(suggestReply(lead, templates, v));
+    setSuggesting(false);
+  }
+
+  // Dynamiskt AI-svar via Claude (faller tillbaka på mallen om AI saknas)
+  async function aiSuggestion() {
+    setAiLoading(true);
+    setStatus(null);
+    const v = await fetchVehicle();
+    try {
+      const res = await fetch("/api/suggest", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          subject: lead.subject,
+          body: lead.body,
+          from: lead.from,
+          service: lead.service,
+          category: lead.category,
+          regnr: lead.regnr,
+          vehicle: v,
+          template: pickTemplate(lead, templates),
+        }),
+      });
+      const data = await res.json();
+      if (data.text) {
+        setBody(data.text);
+      } else {
+        setBody(suggestReply(lead, templates, v));
+        setStatus(
+          data.configured === false
+            ? "AI ej kopplad – använde mall. (Lägg ANTHROPIC_API_KEY för AI-svar.)"
+            : "Kunde inte nå AI – använde mall."
+        );
+      }
+    } catch {
+      setBody(suggestReply(lead, templates, v));
+      setStatus("Kunde inte nå AI – använde mall.");
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   async function send() {
@@ -1030,11 +1094,22 @@ function Composer({
         <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2">
           <div className="flex items-center gap-1 text-slate-400">
             <button
-              title="Förslag på svarstext"
-              onClick={() => setBody(suggestReply(lead, templates))}
-              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50"
+              title="Snabbt mallförslag (fyller i namn, tjänst och bil)"
+              onClick={fillSuggestion}
+              disabled={suggesting}
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50"
             >
-              <Wand2 size={17} /> Förslag
+              {suggesting ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={17} />}
+              Förslag
+            </button>
+            <button
+              title="AI-svar – Claude skriver ett svar utifrån kundens mejl"
+              onClick={aiSuggestion}
+              disabled={aiLoading}
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-violet-600 hover:bg-violet-50 disabled:opacity-50"
+            >
+              {aiLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={17} />}
+              AI-svar
             </button>
             <IconBtn title="Lägg till">
               <Plus size={18} />
