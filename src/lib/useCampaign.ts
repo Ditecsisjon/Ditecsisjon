@@ -93,7 +93,19 @@ export function useCampaign() {
     );
   }, []);
 
-  const importDobs = useCallback(() => setRecipients(sampleDobsList()), []);
+  const importDobs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/dobs");
+      const data = await res.json();
+      if (Array.isArray(data.recipients) && data.recipients.length) {
+        setRecipients(data.recipients);
+        return;
+      }
+    } catch {
+      /* faller tillbaka på inbyggd lista */
+    }
+    setRecipients(sampleDobsList());
+  }, []);
 
   return {
     loaded,

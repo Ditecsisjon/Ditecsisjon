@@ -13,6 +13,7 @@ import {
   LogOut,
   Wand2,
   MessageSquare,
+  Wrench,
 } from "lucide-react";
 
 const NAV = [
@@ -21,6 +22,7 @@ const NAV = [
   { href: "/pipeline", label: "Pipeline", icon: KanbanSquare },
   { href: "/follow-up", label: "Uppföljningar", icon: Send },
   { href: "/kampanjer", label: "SMS-kampanj", icon: MessageSquare },
+  { href: "/verkstad", label: "Verkstad", icon: Wrench },
   { href: "/mallar", label: "Svarsmallar", icon: Wand2 },
 ];
 

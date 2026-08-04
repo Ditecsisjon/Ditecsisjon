@@ -199,3 +199,51 @@ export function toLocalInput(d: Date): string {
 export function formatSlot(s: SlotResult): string {
   return `${s.dateLabel} kl ${s.slotLabel} (tekniker: ${s.technician})`;
 }
+
+// --- Veckoschema / beläggning (för verkstadsvyn) ---------------------------
+
+export interface DaySchedule {
+  dateISO: string;
+  label: string;
+}
+export interface TechDay {
+  booked: number;
+  free: number;
+  slots: { label: string; busy: boolean }[];
+}
+export interface WeekSchedule {
+  days: DaySchedule[];
+  grid: Record<string, Record<string, TechDay>>; // techId -> dateISO -> TechDay
+}
+
+/** Bygger ett veckoschema (5 arbetsdagar) med beläggning per tekniker. */
+export function getWeekSchedule(fromISO: string): WeekSchedule {
+  const days: DaySchedule[] = [];
+  const cursor = new Date(fromISO);
+  cursor.setHours(0, 0, 0, 0);
+  let offset = 0;
+  while (days.length < 5 && offset < 12) {
+    const d = new Date(cursor);
+    d.setDate(d.getDate() + offset);
+    offset++;
+    if (!isWorkday(d)) continue;
+    days.push({
+      dateISO: d.toISOString(),
+      label: d.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short" }),
+    });
+  }
+  const grid: WeekSchedule["grid"] = {};
+  for (const t of TECHNICIANS) {
+    grid[t.id] = {};
+    for (const day of days) {
+      const d = new Date(day.dateISO);
+      const slots = SLOTS.map((s) => ({ label: s.label, busy: isBusy(t.id, d, s.index) }));
+      grid[t.id][day.dateISO] = {
+        booked: slots.filter((s) => s.busy).length,
+        free: slots.filter((s) => !s.busy).length,
+        slots,
+      };
+    }
+  }
+  return { days, grid };
+}
