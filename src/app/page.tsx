@@ -24,6 +24,7 @@ import {
   Calculator,
   Sparkles,
   Loader2,
+  CalendarClock,
 } from "lucide-react";
 import { useLeads } from "@/lib/store";
 import {
@@ -54,6 +55,7 @@ import {
   formatAmount as formatSek,
   type CarSize,
 } from "@/lib/pricing";
+import { parseRequestedTime, toLocalInput, formatSlot, type SlotResult } from "@/lib/planner";
 import { Loading } from "@/components/ui";
 
 const INTENT_PHRASE: Record<Category, string> = {
@@ -397,7 +399,9 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
   const scrollRef = useRef<HTMLDivElement>(null);
   const { history, reminders, handled, addHistory, setReminder, toggleHandled, markUnread } =
     useLeads();
-  const [panel, setPanel] = useState<null | "historik" | "paminnelse" | "pris">(null);
+  const [panel, setPanel] = useState<
+    null | "historik" | "paminnelse" | "pris" | "tid"
+  >(null);
   const [reply, setReply] = useState("");
 
   const key = leadKey(lead);
@@ -440,6 +444,13 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
             onClick={() => setPanel((p) => (p === "pris" ? null : "pris"))}
           >
             <Calculator size={18} />
+          </IconBtn>
+          <IconBtn
+            title="Tidsbokning – kolla tillgänglighet"
+            active={panel === "tid"}
+            onClick={() => setPanel((p) => (p === "tid" ? null : "tid"))}
+          >
+            <CalendarClock size={18} />
           </IconBtn>
           <IconBtn
             title="Automatisk påminnelse"
@@ -492,6 +503,16 @@ function ConversationView({ lead, messages }: { lead: Lead; messages: Message[] 
           ) : null}
           {panel === "pris" ? (
             <PriceConfigurator
+              lead={lead}
+              onInsert={(text) => {
+                setReply((p) => (p ? `${p}\n\n${text}` : text));
+                setPanel(null);
+              }}
+              onClose={() => setPanel(null)}
+            />
+          ) : null}
+          {panel === "tid" ? (
+            <BookingPanel
               lead={lead}
               onInsert={(text) => {
                 setReply((p) => (p ? `${p}\n\n${text}` : text));
@@ -880,6 +901,160 @@ function PriceConfigurator({
           >
             Infoga i svaret
           </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+interface PlannerResult {
+  source: string;
+  competenceLabel?: string;
+  requested: {
+    available: boolean;
+    technician?: string;
+    dateLabel: string;
+    slotLabel: string;
+  };
+  suggestions: SlotResult[];
+}
+
+function BookingPanel({
+  lead,
+  onInsert,
+  onClose,
+}: {
+  lead: Lead;
+  onInsert: (text: string) => void;
+  onClose: () => void;
+}) {
+  const [when, setWhen] = useState<string>(() => toLocalInput(parseRequestedTime(lead.body)));
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<PlannerResult | null>(null);
+
+  async function check() {
+    setLoading(true);
+    setResult(null);
+    try {
+      const iso = new Date(when).toISOString();
+      const res = await fetch("/api/planner", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ requestedISO: iso, service: lead.service }),
+      });
+      setResult(await res.json());
+    } catch {
+      /* ignorera */
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const first = lead.from.split(" ")[0];
+
+  function insertConfirm() {
+    if (!result) return;
+    const r = result.requested;
+    const text = `Hej ${first}!\n\nDin önskade tid (${r.dateLabel} kl ${r.slotLabel}) är ledig – vi bokar in dig då${
+      r.technician ? ` (hos ${r.technician})` : ""
+    }. Välkommen!\n\nVänliga hälsningar,\nDitec Sisjön`;
+    onInsert(text);
+  }
+
+  function insertSuggestions() {
+    if (!result) return;
+    const lines = result.suggestions.map((s) => `• ${formatSlot(s)}`).join("\n");
+    const text = `Hej ${first}!\n\nTyvärr är din önskade tid redan bokad. Vi kan istället erbjuda:\n${lines}\n\nVilken tid passar dig bäst, så bokar vi in dig direkt?\n\nVänliga hälsningar,\nDitec Sisjön`;
+    onInsert(text);
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-20" onClick={onClose} />
+      <div className="absolute right-0 top-11 z-30 w-96 rounded-xl border border-slate-200 bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
+          <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+            <CalendarClock size={15} /> Tidsbokning
+          </span>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="space-y-3 p-4">
+          <div className="text-xs text-slate-500">
+            Tjänst: <span className="font-medium text-slate-700">{lead.service ?? "–"}</span>
+            {result?.competenceLabel ? (
+              <>
+                {" "}· kräver{" "}
+                <span className="font-medium text-slate-700">{result.competenceLabel}</span>
+              </>
+            ) : null}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-500">Önskad tid</label>
+            <input
+              type="datetime-local"
+              value={when}
+              onChange={(e) => setWhen(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-500 focus:outline-none"
+            />
+          </div>
+
+          <button
+            onClick={check}
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-800 py-2 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-50"
+          >
+            {loading ? <Loader2 size={15} className="animate-spin" /> : <CalendarClock size={15} />}
+            Kontrollera tillgänglighet
+          </button>
+
+          {result ? (
+            result.requested.available ? (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                <div className="text-sm font-medium text-emerald-800">
+                  ✓ Ledigt {result.requested.dateLabel} kl {result.requested.slotLabel}
+                  {result.requested.technician ? ` (${result.requested.technician})` : ""}
+                </div>
+                <button
+                  onClick={insertConfirm}
+                  className="mt-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+                >
+                  Infoga bekräftelse i svaret
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-rose-200 bg-rose-50 p-3">
+                <div className="text-sm font-medium text-rose-800">
+                  Upptaget {result.requested.dateLabel} kl {result.requested.slotLabel}
+                </div>
+                {result.suggestions.length ? (
+                  <>
+                    <div className="mt-2 text-xs font-medium text-slate-600">
+                      Föreslagna tider:
+                    </div>
+                    <ul className="mt-1 space-y-1">
+                      {result.suggestions.map((s) => (
+                        <li key={s.startISO} className="text-xs text-slate-700">
+                          • {formatSlot(s)}
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={insertSuggestions}
+                      className="mt-2 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+                    >
+                      Infoga förslag i svaret
+                    </button>
+                  </>
+                ) : (
+                  <div className="mt-1 text-xs text-slate-500">Inga lediga tider hittades.</div>
+                )}
+              </div>
+            )
+          ) : null}
         </div>
       </div>
     </>
