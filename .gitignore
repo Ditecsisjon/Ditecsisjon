@@ -29,3 +29,7 @@ next-env.d.ts
 
 # server-side campaign store (skapas vid körning)
 /.data/
+
+# Temporära skärmbilder
+/shot-*.png
+/feat-*.png
