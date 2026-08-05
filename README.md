@@ -89,7 +89,7 @@ appen kopplas dit via IMAP/SMTP – standardprotokoll, ingen OAuth krävs.
    IMAP_SECURE=true
    IMAP_USER=info@ditecsisjon.se
    IMAP_PASSWORD=ditt-lösenord
-   IMAP_MAILBOX=INBOX
+   IMAP_MAILBOX=Offerter
    MAIL_FETCH_LIMIT=60
 
    SMTP_HOST=smtp.websupport.se
