@@ -1,6 +1,6 @@
-// Regelbaserad kategorisering – fungerar helt offline och används som
-// fallback när ingen ANTHROPIC_API_KEY är satt. Samma logik körs både i
-// webbläsaren (för demo) och på servern (i /api/classify).
+// Regelbaserad kategorisering – fungerar helt offline utan extern AI-tjänst.
+// Nyckelordslogik som bestämmer kategori, prioritet, tjänst och en kort
+// sammanfattning. Körs både i webbläsaren och på servern vid mejlsynk.
 
 import type { Category, Priority } from "./types";
 

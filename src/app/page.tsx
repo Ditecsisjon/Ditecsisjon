@@ -22,7 +22,6 @@ import {
   CircleCheck,
   MailOpen,
   Calculator,
-  Sparkles,
   Loader2,
   CalendarClock,
 } from "lucide-react";
@@ -44,7 +43,7 @@ import {
   type VehicleInfo,
 } from "@/lib/vehicle";
 import { leadKey, customerResponded } from "@/lib/leadMeta";
-import { suggestReply, pickTemplate, defaultReminderText } from "@/lib/suggest";
+import { suggestReply, defaultReminderText } from "@/lib/suggest";
 import {
   TREATMENTS,
   SIZE_ORDER,
@@ -1112,7 +1111,6 @@ function Composer({
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [suggesting, setSuggesting] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -1140,45 +1138,6 @@ function Composer({
     const v = await fetchVehicle();
     setBody(suggestReply(lead, templates, v));
     setSuggesting(false);
-  }
-
-  // Dynamiskt AI-svar via Claude (faller tillbaka på mallen om AI saknas)
-  async function aiSuggestion() {
-    setAiLoading(true);
-    setStatus(null);
-    const v = await fetchVehicle();
-    try {
-      const res = await fetch("/api/suggest", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          subject: lead.subject,
-          body: lead.body,
-          from: lead.from,
-          service: lead.service,
-          category: lead.category,
-          regnr: lead.regnr,
-          vehicle: v,
-          template: pickTemplate(lead, templates),
-        }),
-      });
-      const data = await res.json();
-      if (data.text) {
-        setBody(data.text);
-      } else {
-        setBody(suggestReply(lead, templates, v));
-        setStatus(
-          data.configured === false
-            ? "AI ej kopplad – använde mall. (Lägg ANTHROPIC_API_KEY för AI-svar.)"
-            : "Kunde inte nå AI – använde mall."
-        );
-      }
-    } catch {
-      setBody(suggestReply(lead, templates, v));
-      setStatus("Kunde inte nå AI – använde mall.");
-    } finally {
-      setAiLoading(false);
-    }
   }
 
   async function send() {
@@ -1276,15 +1235,6 @@ function Composer({
             >
               {suggesting ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={17} />}
               Förslag
-            </button>
-            <button
-              title="AI-svar – Claude skriver ett svar utifrån kundens mejl"
-              onClick={aiSuggestion}
-              disabled={aiLoading}
-              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-violet-600 hover:bg-violet-50 disabled:opacity-50"
-            >
-              {aiLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={17} />}
-              AI-svar
             </button>
             <IconBtn title="Lägg till">
               <Plus size={18} />

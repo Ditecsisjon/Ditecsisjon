@@ -23,11 +23,10 @@ Bygger på säljforskning: 80 % av affärer kräver 5+ uppföljningar men de fle
 upp efter en. Appen föreslår uppföljning efter **3, 7, 14 och 30 dagar** och till
 sist ett artigt avslutsmejl. Se `src/lib/follow-up.ts`.
 
-### AI-kategorisering
-Nya mejl kan klassificeras av Claude (kategori, prioritet, tjänst och en kort
-sammanfattning). Utan API-nyckel används automatiskt en regelbaserad
-kategorisering så att appen alltid fungerar. Se `src/app/api/classify/route.ts`
-och `src/lib/classifier.ts`.
+### Kategorisering
+Nya mejl kategoriseras automatiskt med regelbaserad nyckelordslogik (kategori,
+prioritet, tjänst och en kort sammanfattning). Allt körs lokalt – ingen extern
+AI-tjänst eller API-nyckel behövs. Se `src/lib/classifier.ts`.
 
 ### Fordonsuppgifter via regnummer
 När ett mejl öppnas letar appen efter ett svenskt registreringsnummer i texten
@@ -64,22 +63,10 @@ npm run dev
 
 Appen fungerar direkt med exempeldata – ingen konfiguration behövs.
 
-## Steg 2 – slå på AI-kategorisering (valfritt)
+## Kategorisering
 
-1. Skapa en API-nyckel på <https://console.anthropic.com/>.
-2. Kopiera `.env.example` till `.env.local` och fyll i:
-   ```
-   ANTHROPIC_API_KEY=sk-ant-...
-   ANTHROPIC_MODEL=claude-sonnet-5
-   ```
-3. Starta om appen. Nya mejl klassificeras nu av Claude; annars används reglerna.
-
-Testa direkt via API:t:
-```bash
-curl -X POST http://localhost:3000/api/classify \
-  -H "content-type: application/json" \
-  -d '{"subject":"Offert rekond","body":"Vad kostar en helrekond av min Volvo XC60?"}'
-```
+Kategoriseringen är regelbaserad och körs automatiskt – ingen konfiguration
+eller API-nyckel behövs. Justera nyckelord och logik i `src/lib/classifier.ts`.
 
 Testa fordonsuppslaget:
 ```bash
@@ -148,7 +135,6 @@ src/
 │   ├── pipeline/page.tsx   Kanban-pipeline
 │   ├── follow-up/page.tsx  Uppföljningsförslag
 │   └── api/
-│       ├── classify/       AI-kategorisering (med regel-fallback)
 │       └── vehicle/        Fordonsuppslag via regnummer (demo + leverantör)
 ├── components/             UI-komponenter (badges, rader, detaljvy m.m.)
 └── lib/

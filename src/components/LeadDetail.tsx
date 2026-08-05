@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { X, Sparkles, Phone, Mail, Check, Car, Search, Loader2 } from "lucide-react";
+import { X, FileText, Phone, Mail, Check, Car, Search, Loader2 } from "lucide-react";
 import type { Lead, Status } from "@/lib/types";
 import { STATUS_LABELS, PIPELINE_ORDER } from "@/lib/types";
 import { useLeads } from "@/lib/store";
@@ -65,18 +65,13 @@ export function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void 
             {lead.quoteAmount ? <span>Offert: {formatAmount(lead.quoteAmount)}</span> : null}
           </div>
 
-          {/* AI-sammanfattning */}
+          {/* Sammanfattning */}
           {lead.aiSummary ? (
-            <div className="mt-4 rounded-lg border border-violet-200 bg-violet-50 p-3">
-              <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-violet-700">
-                <Sparkles size={14} /> AI-sammanfattning
-                {lead.aiConfidence ? (
-                  <span className="font-normal text-violet-400">
-                    · {Math.round(lead.aiConfidence * 100)}% säkerhet
-                  </span>
-                ) : null}
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                <FileText size={14} /> Sammanfattning
               </div>
-              <p className="text-sm text-violet-900">{lead.aiSummary}</p>
+              <p className="text-sm text-slate-800">{lead.aiSummary}</p>
             </div>
           ) : null}
 

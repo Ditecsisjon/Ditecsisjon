@@ -1,6 +1,6 @@
 // Datamodell för Ditec Inkorg
 
-/** Vad mejlet gäller – bestäms av AI-kategoriseringen */
+/** Vad mejlet gäller – bestäms av den regelbaserade kategoriseringen */
 export type Category = "offert" | "bokning" | "konsultation" | "ovrigt";
 
 /** Var i processen ärendet befinner sig */
