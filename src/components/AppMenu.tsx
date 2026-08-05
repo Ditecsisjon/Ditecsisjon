@@ -14,6 +14,7 @@ import {
   Wand2,
   MessageSquare,
   Wrench,
+  Mail,
 } from "lucide-react";
 
 const NAV = [
@@ -24,6 +25,7 @@ const NAV = [
   { href: "/kampanjer", label: "SMS-kampanj", icon: MessageSquare },
   { href: "/verkstad", label: "Verkstad", icon: Wrench },
   { href: "/mallar", label: "Svarsmallar", icon: Wand2 },
+  { href: "/mejl", label: "Mejlkoppling", icon: Mail },
 ];
 
 /** Diskret flytande meny för att nå appens vyer utan fast sidomeny. */
