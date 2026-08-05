@@ -9,8 +9,13 @@ export async function middleware(req: NextRequest) {
   if (!pw) return NextResponse.next();
 
   const { pathname } = req.nextUrl;
-  // Släpp igenom inloggningssidan och dess API
-  if (pathname.startsWith("/login") || pathname.startsWith("/api/login")) {
+  // Släpp igenom inloggningssidan, dess API och den publika SMS-webhooken
+  // (46elks anropar den utan inloggning).
+  if (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/api/login") ||
+    pathname.startsWith("/api/sms/inbound")
+  ) {
     return NextResponse.next();
   }
 

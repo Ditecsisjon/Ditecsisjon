@@ -7,9 +7,9 @@ import "server-only";
 import { promises as fs } from "fs";
 import path from "path";
 import { DEFAULT_SETTINGS, type CampaignSettings, type Recipient } from "./campaign";
+import { dataFile } from "./dataDir.server";
 
-const DATA_DIR = path.join(process.cwd(), ".data");
-const FILE = path.join(DATA_DIR, "campaign.json");
+const FILE = dataFile("campaign.json");
 
 export interface CampaignState {
   recipients: Recipient[];
@@ -30,8 +30,12 @@ export async function readState(): Promise<CampaignState> {
 }
 
 export async function writeState(state: CampaignState): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(FILE, JSON.stringify(state, null, 2), "utf8");
+  try {
+    await fs.mkdir(path.dirname(FILE), { recursive: true });
+    await fs.writeFile(FILE, JSON.stringify(state, null, 2), "utf8");
+  } catch {
+    // Skrivskyddat filsystem (t.ex. Vercel) – ignorera så routen inte kraschar.
+  }
 }
 
 /** Normaliserar telefonnummer för matchning (siffror + ev. +). */

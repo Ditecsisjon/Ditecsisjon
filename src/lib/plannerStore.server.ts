@@ -5,8 +5,9 @@ import "server-only";
 import { promises as fs } from "fs";
 import path from "path";
 import { TECHNICIANS, type Technician } from "./planner";
+import { dataFile } from "./dataDir.server";
 
-const FILE = path.join(process.cwd(), ".data", "technicians.json");
+const FILE = dataFile("technicians.json");
 
 export async function readTechnicians(): Promise<Technician[]> {
   try {
@@ -19,6 +20,10 @@ export async function readTechnicians(): Promise<Technician[]> {
 }
 
 export async function writeTechnicians(list: Technician[]): Promise<void> {
-  await fs.mkdir(path.dirname(FILE), { recursive: true });
-  await fs.writeFile(FILE, JSON.stringify(list, null, 2), "utf8");
+  try {
+    await fs.mkdir(path.dirname(FILE), { recursive: true });
+    await fs.writeFile(FILE, JSON.stringify(list, null, 2), "utf8");
+  } catch {
+    // Skrivskyddat filsystem (t.ex. Vercel) – ignorera så routen inte kraschar.
+  }
 }
