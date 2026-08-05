@@ -21,6 +21,7 @@ import type {
   Message,
   ReminderConfig,
   Status,
+  VehicleData,
 } from "./types";
 import { generateLeads } from "./sample-data";
 import { leadKey } from "./leadMeta";
@@ -29,6 +30,7 @@ const HISTORY_LS_KEY = "ditec:history";
 const REMINDER_LS_KEY = "ditec:reminders";
 const HANDLED_LS_KEY = "ditec:handled";
 const TEMPLATES_LS_KEY = "ditec:templates";
+const VEHICLES_LS_KEY = "ditec:vehicles";
 
 function newId(): string {
   try {
@@ -56,6 +58,8 @@ interface LeadsContextValue {
   handled: Record<string, boolean>;
   /** Egna svarsmallar (nyckel = ärendetyp eller tjänstenamn) */
   templates: Record<string, string>;
+  /** Sparade fordonsuppgifter per ärende (nyckel = leadKey) */
+  vehicles: Record<string, VehicleData>;
   updateStatus: (id: string, status: Status) => void;
   markFollowUpSent: (id: string) => void;
   markAnswered: (id: string) => void;
@@ -67,6 +71,7 @@ interface LeadsContextValue {
   setReminder: (key: string, config: ReminderConfig) => void;
   toggleHandled: (key: string) => void;
   setTemplate: (key: string, text: string) => void;
+  setVehicle: (key: string, data: VehicleData) => void;
 }
 
 const LeadsContext = createContext<LeadsContextValue | null>(null);
@@ -110,6 +115,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   const [reminders, setReminders] = useState<Record<string, ReminderConfig>>({});
   const [handled, setHandled] = useState<Record<string, boolean>>({});
   const [templates, setTemplates] = useState<Record<string, string>>({});
+  const [vehicles, setVehicles] = useState<Record<string, VehicleData>>({});
 
   // Ladda sparad historik/påminnelser (överlever omstart via localStorage)
   useEffect(() => {
@@ -122,6 +128,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       if (hd) setHandled(JSON.parse(hd));
       const t = localStorage.getItem(TEMPLATES_LS_KEY);
       if (t) setTemplates(JSON.parse(t));
+      const v = localStorage.getItem(VEHICLES_LS_KEY);
+      if (v) setVehicles(JSON.parse(v));
     } catch {
       /* ignorera trasig localStorage */
     }
@@ -142,6 +150,14 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       /* ignorera */
     }
   }, [handled]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(VEHICLES_LS_KEY, JSON.stringify(vehicles));
+    } catch {
+      /* ignorera */
+    }
+  }, [vehicles]);
 
   useEffect(() => {
     try {
@@ -279,6 +295,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       reminders,
       handled,
       templates,
+      vehicles,
       syncFromMail,
       addHistory: addHistoryEntry,
       setReminder: (key, config) =>
@@ -287,6 +304,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
         setHandled((prev) => ({ ...prev, [key]: !prev[key] })),
       setTemplate: (key, text) =>
         setTemplates((prev) => ({ ...prev, [key]: text })),
+      setVehicle: (key, data) =>
+        setVehicles((prev) => ({ ...prev, [key]: data })),
       updateStatus: (id, status) =>
         setLeads((prev) =>
           prev.map((l) =>
@@ -359,7 +378,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [leads, threads, loaded, source, syncing, mailStatus, history, reminders, handled, templates]
+    [leads, threads, loaded, source, syncing, mailStatus, history, reminders, handled, templates, vehicles]
   );
 
   return <LeadsContext.Provider value={value}>{children}</LeadsContext.Provider>;

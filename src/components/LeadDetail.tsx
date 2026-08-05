@@ -1,15 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { X, FileText, Phone, Mail, Check, Car, Search, Loader2 } from "lucide-react";
-import type { Lead, Status } from "@/lib/types";
+import {
+  X,
+  FileText,
+  Phone,
+  Mail,
+  Check,
+  Car,
+  Search,
+  Loader2,
+  ExternalLink,
+  Save,
+} from "lucide-react";
+import type { Lead, Status, VehicleData } from "@/lib/types";
 import { STATUS_LABELS, PIPELINE_ORDER } from "@/lib/types";
 import { useLeads } from "@/lib/store";
+import { leadKey } from "@/lib/leadMeta";
 import { formatDate, formatAmount } from "@/lib/format";
 import {
   findRegnrInText,
   isValidRegnr,
   normalizeRegnr,
+  transportstyrelsenUrl,
+  biluppgifterUrl,
   type VehicleInfo,
 } from "@/lib/vehicle";
 import { CategoryBadge, StatusBadge, PriorityDot } from "./Badges";
@@ -159,19 +173,43 @@ export function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void 
 
 // --- Fordonspanel -----------------------------------------------------------
 
-function formatMil(mil?: number): string {
-  if (mil == null) return "–";
-  const km = mil * 10;
-  return `${new Intl.NumberFormat("sv-SE").format(mil)} mil (≈ ${new Intl.NumberFormat(
-    "sv-SE"
-  ).format(km)} km)`;
+const EMPTY_FIELDS: VehicleFields = {
+  brand: "",
+  model: "",
+  modelYear: "",
+  color: "",
+  mileageMil: "",
+  lengthMm: "",
+};
+
+interface VehicleFields {
+  brand: string;
+  model: string;
+  modelYear: string;
+  color: string;
+  mileageMil: string;
+  lengthMm: string;
 }
 
-function formatLength(mm?: number): string {
-  if (mm == null) return "–";
-  const m = (mm / 1000).toFixed(2).replace(".", ",");
-  return `${new Intl.NumberFormat("sv-SE").format(mm)} mm (${m} m)`;
+function toFields(v: Partial<VehicleData> | VehicleInfo): VehicleFields {
+  return {
+    brand: v.brand ?? "",
+    model: v.model ?? "",
+    modelYear: v.modelYear ? String(v.modelYear) : "",
+    color: v.color ?? "",
+    mileageMil: v.mileageMil != null ? String(v.mileageMil) : "",
+    lengthMm: v.lengthMm != null ? String(v.lengthMm) : "",
+  };
 }
+
+const FIELD_META: Array<{ key: keyof VehicleFields; label: string; ph: string }> = [
+  { key: "brand", label: "Bilmärke", ph: "Volvo" },
+  { key: "model", label: "Modell", ph: "XC60" },
+  { key: "modelYear", label: "Årsmodell", ph: "2020" },
+  { key: "color", label: "Färg", ph: "Silvermetallic" },
+  { key: "mileageMil", label: "Miltal (mil)", ph: "6200" },
+  { key: "lengthMm", label: "Längd (mm)", ph: "4688" },
+];
 
 function VehiclePanel({
   lead,
@@ -180,16 +218,30 @@ function VehiclePanel({
   lead: Lead;
   onInsert: (text: string) => void;
 }) {
-  const initial = lead.regnr ?? findRegnrInText(lead.body) ?? "";
+  const { vehicles, setVehicle: saveVehicle } = useLeads();
+  const key = leadKey(lead);
+  const saved = vehicles[key];
+
+  const initial = normalizeRegnr(
+    saved?.regnr ?? lead.regnr ?? findRegnrInText(lead.body) ?? ""
+  );
   const [regnr, setRegnr] = useState(initial);
-  const [vehicle, setVehicle] = useState<VehicleInfo | null>(null);
+  const [fields, setFields] = useState<VehicleFields>(
+    saved ? toFields(saved) : EMPTY_FIELDS
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [origin, setOrigin] = useState<VehicleInfo["source"] | "saved" | null>(
+    saved ? "saved" : null
+  );
+  const [savedFlash, setSavedFlash] = useState(false);
+
+  const setField = (k: keyof VehicleFields, v: string) =>
+    setFields((prev) => ({ ...prev, [k]: v }));
 
   const fetchVehicle = useCallback(async (value: string) => {
     if (!isValidRegnr(value)) {
       setError("Ogiltigt registreringsnummer (t.ex. ABC123 eller ABC12D).");
-      setVehicle(null);
       return;
     }
     setLoading(true);
@@ -199,55 +251,74 @@ function VehiclePanel({
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Kunde inte hämta fordonsuppgifter.");
-        setVehicle(null);
       } else {
-        setVehicle(data as VehicleInfo);
+        setFields(toFields(data as VehicleInfo));
+        setOrigin((data as VehicleInfo).source);
       }
     } catch {
       setError("Kunde inte hämta fordonsuppgifter.");
-      setVehicle(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Hämta automatiskt när mejlet öppnas om ett regnummer hittats
+  // Vid öppning: har vi sparat, visa det. Annars hämta automatiskt om regnr finns.
   useEffect(() => {
-    if (initial && isValidRegnr(initial)) {
-      fetchVehicle(initial);
-    }
+    if (saved) return;
+    if (initial && isValidRegnr(initial)) fetchVehicle(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lead.id]);
 
-  const rows: Array<[string, string]> = vehicle
-    ? [
-        ["Bilmärke", vehicle.brand],
-        ["Modell", vehicle.model],
-        ["Årsmodell", vehicle.modelYear ? String(vehicle.modelYear) : "–"],
-        ["Färg", vehicle.color],
-        ["Miltal", formatMil(vehicle.mileageMil)],
-        ["Längd", formatLength(vehicle.lengthMm)],
-      ]
-    : [];
+  function persist() {
+    if (!isValidRegnr(regnr)) {
+      setError("Ange ett giltigt registreringsnummer innan du sparar.");
+      return;
+    }
+    const data: VehicleData = {
+      regnr: normalizeRegnr(regnr),
+      brand: fields.brand.trim() || undefined,
+      model: fields.model.trim() || undefined,
+      modelYear: fields.modelYear ? Number(fields.modelYear) : undefined,
+      color: fields.color.trim() || undefined,
+      mileageMil: fields.mileageMil ? Number(fields.mileageMil) : undefined,
+      lengthMm: fields.lengthMm ? Number(fields.lengthMm) : undefined,
+    };
+    saveVehicle(key, data);
+    setOrigin("saved");
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1500);
+  }
 
   function insert() {
-    if (!vehicle) return;
-    const text = `Fordon: ${vehicle.brand} ${vehicle.model} (${vehicle.modelYear}), ${vehicle.color}, reg.nr ${vehicle.regnr}.`;
+    const parts = [fields.brand, fields.model].filter(Boolean).join(" ");
+    const yr = fields.modelYear ? ` (${fields.modelYear})` : "";
+    const col = fields.color ? `, ${fields.color}` : "";
+    const text = `Fordon: ${parts}${yr}${col}, reg.nr ${normalizeRegnr(regnr)}.`;
     onInsert(text);
   }
+
+  const originLabel: Record<string, { text: string; cls: string }> = {
+    demo: { text: "demo", cls: "bg-slate-100 text-slate-400" },
+    scrape: { text: "Transportstyrelsen", cls: "bg-emerald-100 text-emerald-700" },
+    api: { text: "API", cls: "bg-emerald-100 text-emerald-700" },
+    saved: { text: "sparat", cls: "bg-brand-100 text-brand-700" },
+    manual: { text: "manuellt", cls: "bg-brand-100 text-brand-700" },
+  };
+  const badge = origin ? originLabel[origin] : null;
+  const validRegnr = isValidRegnr(regnr);
 
   return (
     <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-700">
         <Car size={15} /> Fordonsuppgifter
-        {vehicle?.source === "demo" ? (
-          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-normal text-slate-400">
-            demo
+        {badge ? (
+          <span className={`rounded px-1.5 py-0.5 text-[10px] font-normal ${badge.cls}`}>
+            {badge.text}
           </span>
         ) : null}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <input
           value={regnr}
           onChange={(e) => setRegnr(e.target.value.toUpperCase())}
@@ -265,31 +336,67 @@ function VehiclePanel({
         </button>
       </div>
 
+      {/* Gratis officiella uppslag – ett klick, öppnas i ny flik */}
+      {validRegnr ? (
+        <div className="mt-2 flex flex-wrap gap-3 text-xs">
+          <a
+            href={transportstyrelsenUrl(regnr)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-brand-600 hover:underline"
+          >
+            <ExternalLink size={12} /> Transportstyrelsen (gratis)
+          </a>
+          <a
+            href={biluppgifterUrl(regnr)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-brand-600 hover:underline"
+          >
+            <ExternalLink size={12} /> biluppgifter.se
+          </a>
+        </div>
+      ) : null}
+
       {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
 
-      {vehicle ? (
-        <>
-          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
-            {rows.map(([label, value]) => (
-              <div key={label} className="min-w-0">
-                <dt className="text-[11px] uppercase tracking-wide text-slate-400">{label}</dt>
-                <dd className="truncate text-sm font-medium text-slate-800" title={value}>
-                  {value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          {vehicle.note ? (
-            <p className="mt-2 text-[11px] text-slate-400">{vehicle.note}</p>
-          ) : null}
-          <button
-            onClick={insert}
-            className="mt-2 text-xs font-medium text-brand-600 hover:underline"
-          >
-            + Infoga i svaret
-          </button>
-        </>
-      ) : null}
+      {/* Redigerbara fält – fyll i själv eller justera hämtade uppgifter */}
+      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
+        {FIELD_META.map((f) => (
+          <label key={f.key} className="min-w-0">
+            <span className="text-[11px] uppercase tracking-wide text-slate-400">
+              {f.label}
+            </span>
+            <input
+              value={fields[f.key]}
+              onChange={(e) => setField(f.key, e.target.value)}
+              placeholder={f.ph}
+              className="mt-0.5 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+          </label>
+        ))}
+      </div>
+
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          onClick={persist}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+        >
+          {savedFlash ? <Check size={14} /> : <Save size={14} />}
+          {savedFlash ? "Sparat" : "Spara på ärendet"}
+        </button>
+        <button
+          onClick={insert}
+          className="text-xs font-medium text-brand-600 hover:underline"
+        >
+          + Infoga i svaret
+        </button>
+      </div>
+
+      <p className="mt-2 text-[11px] text-slate-400">
+        Tips: klicka på Transportstyrelsen ovan för gratis uppgifter, fyll i fälten
+        och spara på ärendet.
+      </p>
     </div>
   );
 }

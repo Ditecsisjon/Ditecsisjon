@@ -30,27 +30,31 @@ AI-tjänst eller API-nyckel behövs. Se `src/lib/classifier.ts`.
 
 ### Fordonsuppgifter via regnummer
 När ett mejl öppnas letar appen efter ett svenskt registreringsnummer i texten
-och hämtar automatiskt fordonsuppgifter (bilmärke, modell, årsmodell, färg,
-miltal och längd). Du kan också skriva in ett regnummer manuellt, samt infoga
-bilinfon i svaret med ett klick.
+och hämtar fordonsuppgifter (bilmärke, modell, årsmodell, färg, miltal och
+längd). Du kan också skriva in ett regnummer manuellt, samt infoga bilinfon i
+svaret med ett klick.
 
-I demoläge används inbyggd exempeldata. För skarpa uppgifter, koppla en svensk
-fordonstjänst genom att sätta `VEHICLE_API_URL` och `VEHICLE_API_KEY` i
-`.env.local`:
+**Gratis (rekommenderas – ingen kostnad):**
+1. **Ett-klicks-länkar** – i fordonsraden/panelen finns länkar till
+   Transportstyrelsens gratis fordonsuppslag och biluppgifter.se. Klicka, läs
+   uppgifterna och fyll i fälten i appen. Fungerar överallt, kostar inget.
+2. **Automatisk gratis-scraper (valfritt, lokalt)** – appen kan hämta
+   uppgifterna automatiskt från Transportstyrelsens gratistjänst med en riktig
+   webbläsare:
+   ```bash
+   npm i -D playwright
+   npx playwright install chromium
+   ```
+   Sätt sedan `VEHICLE_SCRAPE=transportstyrelsen` i `.env.local`. Kör lokalt
+   (t.ex. Windows). Fungerar **inte** på Vercels serverless-funktioner, och kan
+   ibland stoppas av reCAPTCHA – då används länkarna/fälten i stället.
 
-| Tjänst | Sida |
-|--------|------|
-| Biluppgifter.se (API) | <https://apidocs.biluppgifter.se/> |
-| Car.info (B2B API) | <https://www.car.info/sv-se/b2b/api> |
-| Checkbiz | <https://checkbiz.se/data/fordon/> |
-| Fordonsfakta | <https://fordonsfakta.se/> |
+**Betald leverantör (valfritt):** vill du ha ett riktigt API senare, sätt
+`VEHICLE_API_URL` och `VEHICLE_API_KEY` (t.ex. Biluppgifter.se eller Car.info)
+och justera `mapProviderResponse` i `src/app/api/vehicle/route.ts`.
 
-De flesta kräver API-nyckel och ibland tillstånd för direktåtkomst från
-Transportstyrelsen. Fältnamnen skiljer sig mellan leverantörer – justera
-mappningen i `mapProviderResponse` i `src/app/api/vehicle/route.ts`. Använd
-`{regnr}` som platshållare i URL:en om leverantören vill ha regnumret i
-sökvägen. **Obs:** miltal/mätarställning i registret är "senast kända vid
-besiktning", inte realtid.
+**Obs:** miltal/mätarställning i registret är "senast kända vid besiktning",
+inte realtid.
 
 ## Kom igång
 

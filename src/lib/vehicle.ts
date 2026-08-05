@@ -20,7 +20,7 @@ export interface VehicleInfo {
   /** Längd i millimeter */
   lengthMm?: number;
   /** Var uppgifterna kom ifrån */
-  source: "demo" | "api";
+  source: "demo" | "api" | "scrape" | "manual";
   /** Extra notering, t.ex. om miltal är uppskattat */
   note?: string;
 }
@@ -46,6 +46,18 @@ export function findRegnrInText(text: string): string | null {
 export function isValidRegnr(input: string): boolean {
   const norm = normalizeRegnr(input);
   return /^[A-ZÅÄÖ]{3}\d{2}[A-Z0-9]$/.test(norm);
+}
+
+/** Länk till Transportstyrelsens gratis fordonsuppslag (officiell källa). */
+export function transportstyrelsenUrl(regnrRaw: string): string {
+  return `https://fordon-fu-regnr.transportstyrelsen.se/?registreringsnummer=${encodeURIComponent(
+    normalizeRegnr(regnrRaw)
+  )}`;
+}
+
+/** Länk till biluppgifter.se (gratis publik sida). */
+export function biluppgifterUrl(regnrRaw: string): string {
+  return `https://biluppgifter.se/fordon/${encodeURIComponent(normalizeRegnr(regnrRaw))}`;
 }
 
 // Demodata kopplad till exempelmejlen så att uppslag ger realistiska svar.

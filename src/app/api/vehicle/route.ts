@@ -82,5 +82,19 @@ export async function GET(request: Request) {
     }
   }
 
+  // Gratis scraper mot Transportstyrelsen (valfritt, kräver playwright lokalt).
+  // Slå på med VEHICLE_SCRAPE=transportstyrelsen i .env.local.
+  if (process.env.VEHICLE_SCRAPE === "transportstyrelsen") {
+    try {
+      const { scrapeTransportstyrelsen } = await import(
+        "@/lib/vehicleScrape.server"
+      );
+      const scraped = await scrapeTransportstyrelsen(regnr);
+      if (scraped) return NextResponse.json(scraped);
+    } catch {
+      // faller tillbaka på demo nedan
+    }
+  }
+
   return NextResponse.json(lookupDemoVehicle(regnr));
 }

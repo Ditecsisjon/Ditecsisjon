@@ -39,6 +39,8 @@ export interface Lead {
   service?: string;
   /** Kundens registreringsnummer om det nämnts i mejlet */
   regnr?: string;
+  /** Sparade fordonsuppgifter för ärendet (manuellt ifyllda eller hämtade) */
+  vehicle?: VehicleData;
   /** ISO-datum då offert skickades (om status = offert_skickad) */
   quoteSentAt?: string;
   /** Offertbelopp i SEK */
@@ -53,6 +55,17 @@ export interface Lead {
   aiConfidence?: number;
   /** Oläst konversation – markeras i blått i listan */
   unread?: boolean;
+}
+
+/** Sparade fordonsuppgifter på ett ärende */
+export interface VehicleData {
+  regnr: string;
+  brand?: string;
+  model?: string;
+  modelYear?: number;
+  color?: string;
+  mileageMil?: number;
+  lengthMm?: number;
 }
 
 /** Ett meddelande i en konversationstråd */

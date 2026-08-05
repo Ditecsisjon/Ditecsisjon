@@ -24,6 +24,7 @@ import {
   Calculator,
   Loader2,
   CalendarClock,
+  ExternalLink,
 } from "lucide-react";
 import { useLeads } from "@/lib/store";
 import {
@@ -40,6 +41,8 @@ import {
   findRegnrInText,
   isValidRegnr,
   normalizeRegnr,
+  transportstyrelsenUrl,
+  biluppgifterUrl,
   type VehicleInfo,
 } from "@/lib/vehicle";
 import { leadKey, customerResponded } from "@/lib/leadMeta";
@@ -299,10 +302,23 @@ function VehicleBar({ lead }: { lead: Lead | null }) {
   }, [regnr]);
 
   const km = vehicle?.mileageMil != null ? vehicle.mileageMil * 10 : undefined;
+  const badge =
+    vehicle?.source === "demo"
+      ? { text: "demo", cls: "bg-slate-100 text-slate-400" }
+      : vehicle?.source === "scrape" || vehicle?.source === "api"
+      ? { text: "Transportstyrelsen", cls: "bg-emerald-100 text-emerald-700" }
+      : null;
 
   return (
     <div className="flex flex-wrap items-center gap-x-8 gap-y-1 border-b border-slate-200 bg-white px-6 py-3 text-sm">
-      <span className="font-bold text-slate-900">Biluppgifter på vald offert.</span>
+      <span className="flex items-center gap-2 font-bold text-slate-900">
+        Biluppgifter på vald offert.
+        {badge ? (
+          <span className={`rounded px-1.5 py-0.5 text-[10px] font-normal ${badge.cls}`}>
+            {badge.text}
+          </span>
+        ) : null}
+      </span>
       {loading ? (
         <span className="text-slate-400">Hämtar fordonsuppgifter…</span>
       ) : vehicle ? (
@@ -315,10 +331,38 @@ function VehicleBar({ lead }: { lead: Lead | null }) {
             value={km != null ? `${new Intl.NumberFormat("sv-SE").format(km)} km` : "–"}
           />
           <BarField label="Färg" value={vehicle.color.toUpperCase()} />
+          {vehicle.lengthMm ? (
+            <BarField
+              label="Längd"
+              value={`${new Intl.NumberFormat("sv-SE").format(vehicle.lengthMm)} mm`}
+            />
+          ) : null}
         </>
       ) : (
         <span className="text-slate-400">Ingen bil kopplad till detta ärende.</span>
       )}
+      {regnr && isValidRegnr(regnr) ? (
+        <span className="flex items-center gap-3 text-xs">
+          <a
+            href={transportstyrelsenUrl(regnr)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-brand-600 hover:underline"
+            title="Öppna Transportstyrelsens gratis fordonsuppslag"
+          >
+            <ExternalLink size={12} /> Transportstyrelsen
+          </a>
+          <a
+            href={biluppgifterUrl(regnr)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-brand-600 hover:underline"
+            title="Öppna biluppgifter.se"
+          >
+            <ExternalLink size={12} /> biluppgifter.se
+          </a>
+        </span>
+      ) : null}
     </div>
   );
 }
