@@ -7,11 +7,17 @@
   var burger = document.querySelector('.nav-burger');
   var links = document.getElementById('nav-links');
 
+  function menuLabel(key, fallback) {
+    return (window.I18N && window.I18N.t(key)) || fallback;
+  }
+
   if (burger && links) {
     burger.addEventListener('click', function () {
       var open = document.body.classList.toggle('nav-open');
       burger.setAttribute('aria-expanded', String(open));
-      burger.setAttribute('aria-label', open ? 'Stäng menyn' : 'Öppna menyn');
+      burger.setAttribute('aria-label', open
+        ? menuLabel('nav.menuClose', 'Stäng menyn')
+        : menuLabel('nav.menuOpen', 'Öppna menyn'));
     });
     links.addEventListener('click', function (ev) {
       if (ev.target.closest('a')) {
@@ -80,20 +86,25 @@
       ev.preventDefault();
       if (!form.reportValidity()) return;
 
+      /* Mejlets texter följer valt språk via I18N (js/i18n.js) */
+      function t(key, fallback) {
+        return (window.I18N && window.I18N.t(key)) || fallback;
+      }
+
       var data = new FormData(form);
-      var subject = 'Demoförfrågan – ' + (data.get('company') || data.get('name'));
+      var subject = t('mail.subject', 'Demoförfrågan') + ' – ' + (data.get('company') || data.get('name'));
       var body = [
-        'Hej!',
+        t('mail.greeting', 'Hej!'),
         '',
-        'Jag vill boka en demo av plattformen.',
+        t('mail.intro', 'Jag vill boka en demo av plattformen.'),
         '',
-        'Namn: ' + data.get('name'),
-        'Företag: ' + data.get('company'),
-        'E-post: ' + data.get('email'),
-        'Telefon: ' + (data.get('phone') || '–'),
-        'Antal anläggningar: ' + data.get('size'),
+        t('mail.name', 'Namn') + ': ' + data.get('name'),
+        t('mail.company', 'Företag') + ': ' + data.get('company'),
+        t('mail.email', 'E-post') + ': ' + data.get('email'),
+        t('mail.phone', 'Telefon') + ': ' + (data.get('phone') || '–'),
+        t('mail.size', 'Antal anläggningar') + ': ' + data.get('size'),
         '',
-        'Meddelande:',
+        t('mail.msg', 'Meddelande') + ':',
         (data.get('message') || '–')
       ].join('\n');
 

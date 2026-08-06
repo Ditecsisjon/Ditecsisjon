@@ -9,14 +9,29 @@ planering, drift, personal och marknadsföring – med demobokning som huvudmål
 ## Struktur
 
 ```
-index.html          – hela sidan (all text redigeras här)
+index.html          – hela sidan (svensk text som grund, märkt med data-i18n)
 css/styles.css      – design (färger/typsnitt i :root-tokens högst upp)
+js/i18n.js          – alla översättningar + språkväxlingen (13 språk)
 js/main.js          – meny, scrollanimationer, video, demoformulär
 assets/fonts/       – självhostade typsnitt (Barlow, OFL-licens – ingen Google-koppling)
 ```
 
 Sidan är helt statisk – inga byggsteg, inga beroenden. Öppna `index.html` i en
 webbläsare lokalt, eller publicera enligt nedan.
+
+## Språk
+
+Sidan finns på 13 språk: svenska (standard), engelska, danska, tyska, spanska,
+franska, polska, finska, ryska, arabiska (höger-till-vänster), hindi, kinesiska
+och koreanska. Besökaren byter språk i menyn; valet sparas i webbläsaren.
+
+- **Automatiskt:** förstagångsbesökare får sitt webbläsarspråk om det stöds, annars svenska.
+- **Direktlänk:** lägg till `?lang=en`, `?lang=de` osv. i adressen (bra för annonser).
+- **Ändra texter:** alla översättningar ligger i `js/i18n.js`, grupperade per språk
+  med samma nycklar. Svenskan är källa – saknas en nyckel i ett språk används den
+  svenska texten automatiskt.
+- **Nytt språk:** kopiera ett språkblock i `js/i18n.js`, översätt, och lägg till
+  ett `<option>` i språkväljaren i `index.html`.
 
 ## Publicera
 
@@ -31,6 +46,7 @@ Egen domän (t.ex. `glansverk.se`) kopplas under samma inställning.
 | Vad | Var |
 | --- | --- |
 | Presentationsvideo | `index.html`, sök `VIDEO:` – sätt `data-youtube-id` eller `data-vimeo-id` |
+| Texter & översättningar | `js/i18n.js` (svenska = källspråk, per språkblock) |
 | Demoformulärets mottagare | `js/main.js`, sök `mailto:` (idag `jobb.ditec@gmail.com`) |
 | Ta emot formulär utan mejlprogram | Skapa gratisformulär på formspree.io, se kommentar `FORMULÄR:` i `index.html` – eller ersätt formuläret med en Calendly-inbäddning |
 | Färger & typsnitt | `css/styles.css`, tokens under `:root` (accenten heter `--red`) |

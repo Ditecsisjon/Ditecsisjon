@@ -5,13 +5,17 @@
    En accent: karminröd. Typografi: Barlow / Barlow Condensed.
    ========================================================= */
 
-/* ---------- Typsnitt (self-hostade, OFL-licens) ---------- */
+/* ---------- Typsnitt (self-hostade, OFL-licens) ----------
+   latin täcker sv/en/da/fi/de/es/fr m.fl., latin-ext behövs för polska.
+   Ryska, arabiska, hindi, kinesiska och koreanska faller tillbaka på
+   systemtypsnitt via unicode-range – webbläsaren laddar bara det som används. */
 @font-face {
   font-family: 'Barlow';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
   src: url('../assets/fonts/barlow-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
 }
 @font-face {
   font-family: 'Barlow';
@@ -19,6 +23,7 @@
   font-weight: 500;
   font-display: swap;
   src: url('../assets/fonts/barlow-500.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
 }
 @font-face {
   font-family: 'Barlow';
@@ -26,6 +31,7 @@
   font-weight: 700;
   font-display: swap;
   src: url('../assets/fonts/barlow-700.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
 }
 @font-face {
   font-family: 'Barlow Condensed';
@@ -33,6 +39,7 @@
   font-weight: 600;
   font-display: swap;
   src: url('../assets/fonts/barlow-condensed-600.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
 }
 @font-face {
   font-family: 'Barlow Condensed';
@@ -40,6 +47,47 @@
   font-weight: 700;
   font-display: swap;
   src: url('../assets/fonts/barlow-condensed-700.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
+}
+@font-face {
+  font-family: 'Barlow';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/barlow-400-latinext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113;
+}
+@font-face {
+  font-family: 'Barlow';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../assets/fonts/barlow-500-latinext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113;
+}
+@font-face {
+  font-family: 'Barlow';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/barlow-700-latinext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113;
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../assets/fonts/barlow-condensed-600-latinext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113;
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/barlow-condensed-700-latinext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113;
 }
 
 /* ---------- Tokens ---------- */
@@ -107,18 +155,26 @@ a { color: inherit; }
   border-radius: 2px;
 }
 
+/* Gömd tills fokus – fixed + transform skapar ingen scrollyta (viktigt i RTL) */
 .skip-link {
-  position: absolute;
-  left: -9999px;
-  top: 0;
+  position: fixed;
+  top: 12px;
+  inset-inline-start: 12px;
   z-index: 200;
   background: var(--red);
   color: #fff;
   padding: 10px 16px;
   font-weight: 700;
   text-decoration: none;
+  transform: translateY(-80px);
+  opacity: 0;
+  pointer-events: none;
 }
-.skip-link:focus { left: 12px; top: 12px; }
+.skip-link:focus {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .container {
   max-width: 1128px;
@@ -253,7 +309,7 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
   align-items: center;
   gap: 11px;
   text-decoration: none;
-  margin-right: auto;
+  margin-inline-end: auto;
 }
 .brand-mark { width: 27px; height: 27px; flex: none; }
 .brand-name {
@@ -279,6 +335,44 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
 }
 .nav-links a:not(.btn):hover { color: var(--ink-text); }
 .nav-links .btn { padding: 10px 18px; font-size: 13.5px; }
+
+/* Språkväljare */
+.lang {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.lang svg {
+  position: absolute;
+  inset-inline-start: 10px;
+  width: 15px;
+  height: 15px;
+  color: var(--ink-mute);
+  pointer-events: none;
+}
+.lang select {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-text);
+  background: transparent;
+  border: 1px solid var(--ink-line);
+  border-radius: var(--r-s);
+  padding: 8px 26px 8px 32px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%239aabac' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 11px;
+}
+html[dir='rtl'] .lang select {
+  padding: 8px 32px 8px 26px;
+  background-position: left 9px center;
+}
+.lang select:hover { border-color: var(--ink-mute); }
+.lang select option { color: #16242a; background: #fff; }
 
 .nav-burger {
   display: none;
@@ -389,14 +483,14 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
   text-transform: uppercase;
   color: var(--mute);
 }
-.mock-bar .dots { display: flex; gap: 5px; margin-right: 6px; }
+.mock-bar .dots { display: flex; gap: 5px; margin-inline-end: 6px; }
 .mock-bar .dots i {
   width: 9px;
   height: 9px;
   border-radius: 50%;
   background: var(--line);
 }
-.mock-bar .mock-day { margin-left: auto; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.mock-bar .mock-day { margin-inline-start: auto; font-weight: 500; text-transform: none; letter-spacing: 0; }
 
 .mock-kpis {
   display: grid;
@@ -465,7 +559,7 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
 .mock-ai {
   position: absolute;
   z-index: 2;
-  right: -14px;
+  inset-inline-end: -14px;
   bottom: -26px;
   width: min(320px, 86%);
   background: var(--ink-2);
@@ -511,7 +605,7 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
 .mock-mail {
   position: absolute;
   z-index: 3;
-  left: -12px;
+  inset-inline-start: -12px;
   top: -24px;
   display: inline-flex;
   align-items: center;
@@ -545,11 +639,11 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
   grid-template-columns: repeat(4, 1fr);
 }
 .stat {
-  padding: 26px 26px 26px 0;
-  border-left: 1px solid var(--ink-line);
-  padding-left: 26px;
+  padding-block: 26px;
+  padding-inline: 26px;
+  border-inline-start: 1px solid var(--ink-line);
 }
-.stat:first-child { border-left: 0; padding-left: 0; }
+.stat:first-child { border-inline-start: 0; padding-inline-start: 0; }
 .stat b {
   display: block;
   font-family: var(--disp);
@@ -749,7 +843,8 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
   transition: transform 0.15s ease, background-color 0.15s ease;
 }
 .video-play:hover { transform: scale(1.06); background: var(--red-deep); }
-.video-play svg { width: 26px; height: 26px; margin-left: 4px; }
+.video-play svg { width: 26px; height: 26px; margin-inline-start: 4px; }
+html[dir='rtl'] .video-play svg { transform: scaleX(-1); }
 .video-poster p { margin: 0; color: var(--ink-mute); font-size: 15px; max-width: 40ch; }
 .video-note {
   margin: 0;
@@ -819,8 +914,9 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
 
 .founder-note {
   margin-top: clamp(40px, 5vw, 56px);
-  border-left: 3px solid var(--red);
-  padding: 6px 0 6px clamp(20px, 3vw, 32px);
+  border-inline-start: 3px solid var(--red);
+  padding-block: 6px;
+  padding-inline: clamp(20px, 3vw, 32px) 0;
   max-width: 66ch;
 }
 .founder-note p {
@@ -996,6 +1092,49 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
 }
 .reveal.in { opacity: 1; transform: none; }
 
+/* ---------- Skriptspecifika justeringar ----------
+   Arabiska: sammanbunden skrift – inget teckenmellanrum, ingen kondenserad
+   versalsättning. CJK/devanagari: högre radhöjd så inga glyfer klipps. */
+html[lang='ar'] .h-display,
+html[lang='ar'] .eyebrow,
+html[lang='ar'] .btn,
+html[lang='ar'] .pillar-label,
+html[lang='ar'] .chip,
+html[lang='ar'] .state,
+html[lang='ar'] .field label,
+html[lang='ar'] .mock-bar,
+html[lang='ar'] .card h3,
+html[lang='ar'] .why h3,
+html[lang='ar'] .loop h3,
+html[lang='ar'] .kpi span,
+html[lang='ar'] .mock-ai .tag,
+html[lang='ar'] .nav-links a:not(.btn),
+html[lang='ar'] .footer-links a {
+  letter-spacing: 0;
+}
+html[lang='ar'] .h-display,
+html[lang='hi'] .h-display,
+html[lang='zh'] .h-display,
+html[lang='ko'] .h-display {
+  line-height: 1.18;
+}
+html[lang='ar'] h1.h-display,
+html[lang='hi'] h1.h-display,
+html[lang='zh'] h1.h-display,
+html[lang='ko'] h1.h-display {
+  font-size: clamp(38px, 5.8vw, 68px);
+}
+html[lang='ar'] h2.h-display,
+html[lang='hi'] h2.h-display,
+html[lang='zh'] h2.h-display,
+html[lang='ko'] h2.h-display {
+  font-size: clamp(28px, 3.8vw, 44px);
+}
+html[dir='rtl'] .loop-arrow svg,
+html[dir='rtl'] .btn-ico {
+  transform: scaleX(-1);
+}
+
 /* ---------- Rörelsereducering ---------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -1032,6 +1171,8 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
   }
   .nav-open .nav-links { display: flex; }
   .nav-links a:not(.btn) { padding: 14px 4px; font-size: 16px; }
+  .nav-links .lang { margin-top: 12px; }
+  .nav-links .lang select { width: 100%; }
   .nav-links .btn { margin-top: 10px; }
   .nav-burger { display: block; }
   .nav-open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
@@ -1039,8 +1180,8 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
   .nav-open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
   .stats-grid { grid-template-columns: 1fr 1fr; }
-  .stat { border-left: 0; padding-left: 0; }
-  .stat:nth-child(even) { border-left: 1px solid var(--ink-line); padding-left: 22px; }
+  .stat { border-inline-start: 0; padding-inline-start: 0; }
+  .stat:nth-child(even) { border-inline-start: 1px solid var(--ink-line); padding-inline-start: 22px; }
 
   .cards, .pains { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
@@ -1051,7 +1192,7 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
   .mrow { grid-template-columns: 46px 1fr auto; }
   .mrow .tech { display: none; }
   .mock-ai { position: static; width: auto; margin-top: 14px; }
-  .mock-mail { left: 10px; top: -22px; }
+  .mock-mail { inset-inline-start: 10px; top: -22px; }
   .loop-arrow { display: none; }
   .loop-step { white-space: normal; }
 }
