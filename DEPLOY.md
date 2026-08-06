@@ -1,5 +1,9 @@
 # Lägg appen på en webbadress (Vercel) – steg för steg
 
+> **Har du redan webbhotell hos Hetzner?** Då kan appen köras där i stället –
+> se `DEPLOY-HETZNER.md`. Kräver paketet Webhosting L eller större (Node.js-
+> stöd). Fördel: datan sparas permanent och du använder din egen domän.
+
 Efter det här har du en egen adress (t.ex. `https://ditec-inkorg.vercel.app`)
 som du kan öppna från dator och mobil. Du behöver aldrig ladda ner något igen –
 varje gång koden uppdateras uppdateras sidan automatiskt. Appen skyddas med ett
