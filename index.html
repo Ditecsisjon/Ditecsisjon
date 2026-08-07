@@ -34,6 +34,7 @@
 
       <nav class="nav-links" id="nav-links" aria-label="Huvudmeny">
         <a href="#moduler" data-i18n="nav.modules">Moduler</a>
+        <a href="#prova" data-i18n="nav.try">Testa själv</a>
         <a href="#video" data-i18n="nav.video">Video</a>
         <a href="#sa-funkar-det" data-i18n="nav.how">Så funkar det</a>
         <a href="#faq" data-i18n="nav.faq">Frågor &amp; svar</a>
@@ -347,6 +348,81 @@
             <span class="loop-step" data-i18n="loop.s4">Statistiken lär</span>
             <span class="loop-arrow"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M2 8h11M9.5 4.5 13 8l-3.5 3.5"/></svg></span>
             <span class="loop-step loop-step--ai" data-i18n="loop.s5">AI:n hittar nästa affär</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PROVA KONFIGURATORN =================
+         Interaktiv demo i Spark Vision-anda: besökaren gör tre val och ser
+         paket, pris och AI-merförsäljning direkt. Alla priser är exempel –
+         logiken (basbelopp/multiplikatorer) ligger i js/main.js. -->
+    <section class="sec" id="prova">
+      <div class="container">
+        <div class="sec-head reveal">
+          <p class="eyebrow" data-i18n="cfg.eyebrow">Prova själv</p>
+          <h2 class="h-display" data-i18n="cfg.h2">Tre val. Färdigt paket. Rätt pris.</h2>
+          <p class="lead" data-i18n="cfg.lead">
+            Köpbeslut blir enkla när kunden ser paketet och priset direkt. Så här känns
+            tjänstekonfiguratorn för ditt team – från behov till färdig offert på under en minut. Testa:
+          </p>
+        </div>
+
+        <div class="cfg reveal">
+          <div class="cfg-steps">
+            <div class="cfg-group" role="group" aria-labelledby="cfg-l1">
+              <p class="cfg-legend" id="cfg-l1" data-i18n="cfg.s1">Bilen</p>
+              <div class="cfg-chips" data-group="size">
+                <button type="button" class="cfg-chip" data-value="small" aria-pressed="false" data-i18n="cfg.s1o1">Liten bil</button>
+                <button type="button" class="cfg-chip is-on" data-value="mid" aria-pressed="true" data-i18n="cfg.s1o2">Mellanklass</button>
+                <button type="button" class="cfg-chip" data-value="suv" aria-pressed="false" data-i18n="cfg.s1o3">SUV</button>
+                <button type="button" class="cfg-chip" data-value="van" aria-pressed="false" data-i18n="cfg.s1o4">Transport</button>
+              </div>
+            </div>
+            <div class="cfg-group" role="group" aria-labelledby="cfg-l2">
+              <p class="cfg-legend" id="cfg-l2" data-i18n="cfg.s2">Lackens skick</p>
+              <div class="cfg-chips" data-group="cond">
+                <button type="button" class="cfg-chip" data-value="new" aria-pressed="false" data-i18n="cfg.s2o1">Nyskick</button>
+                <button type="button" class="cfg-chip is-on" data-value="normal" aria-pressed="true" data-i18n="cfg.s2o2">Normalt slitage</button>
+                <button type="button" class="cfg-chip" data-value="worn" aria-pressed="false" data-i18n="cfg.s2o3">Repig &amp; matt</button>
+              </div>
+            </div>
+            <div class="cfg-group" role="group" aria-labelledby="cfg-l3">
+              <p class="cfg-legend" id="cfg-l3" data-i18n="cfg.s3">Kundens mål</p>
+              <div class="cfg-chips" data-group="goal">
+                <button type="button" class="cfg-chip" data-value="maint" aria-pressed="false" data-i18n="cfg.s3o1">Löpande underhåll</button>
+                <button type="button" class="cfg-chip" data-value="sale" aria-pressed="false" data-i18n="cfg.s3o2">Inför försäljning</button>
+                <button type="button" class="cfg-chip is-on" data-value="shield" aria-pressed="true" data-i18n="cfg.s3o3">Långtidsskydd</button>
+              </div>
+            </div>
+            <p class="cfg-note" data-i18n="cfg.note">
+              Alla tjänster och priser är exempel. I plattformen styr du själv utbud,
+              priser, tider och regler – konfiguratorn räknar.
+            </p>
+          </div>
+
+          <div class="cfg-result" aria-live="polite">
+            <p class="cfg-result-label" data-i18n="cfg.result">Föreslaget paket</p>
+            <h3 class="cfg-pkg" id="cfg-pkg">Keramiska skyddspaketet</h3>
+            <p class="cfg-includes" id="cfg-includes">Helrekond · Polering steg 2 · Keramiskt lackskydd, 3 år</p>
+            <div class="cfg-nums">
+              <div class="cfg-num">
+                <span data-i18n="cfg.price">Pris till kund</span>
+                <b id="cfg-price">från 9 995 kr</b>
+              </div>
+              <div class="cfg-num">
+                <span data-i18n="cfg.time">Tidsåtgång</span>
+                <b id="cfg-time">ca 10 tim</b>
+              </div>
+            </div>
+            <div class="cfg-ai">
+              <span class="tag" data-i18n="mock.aiTag">AI-förslag</span>
+              <p id="cfg-tip">Kunder med lackskydd kommer tillbaka: CRM:et bokar in kostnadsfri kontroll efter 6 månader – automatiskt.</p>
+            </div>
+            <div class="cfg-cta">
+              <p data-i18n="cfg.cta">Exakt så här enkelt blir det för ditt team – med era tjänster och era priser.</p>
+              <a class="btn btn--primary" href="#demo" data-i18n="hero.ctaDemo">Boka en demo</a>
+            </div>
           </div>
         </div>
       </div>

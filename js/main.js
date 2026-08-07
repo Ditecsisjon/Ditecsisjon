@@ -117,6 +117,77 @@
     });
   }
 
+  /* ---------- Provkonfiguratorn ----------
+     Illustrativ demo av tjänstekonfiguratorn: tre val → paket, pris och
+     AI-merförsäljning direkt. Basbelopp och multiplikatorer är exempel. */
+  var cfgRoot = document.getElementById('prova');
+  if (cfgRoot) {
+    var CFG = {
+      base:  { maint: 1495, sale: 4995, shield: 9995 },
+      hours: { maint: 2, sale: 6, shield: 10 },
+      sizeMul: { small: 0.85, mid: 1, suv: 1.2, van: 1.35 },
+      condMul: { new: 0.9, normal: 1, worn: 1.25 },
+      pkgKey:  { maint: 'cfg.pkg1', sale: 'cfg.pkg2', shield: 'cfg.pkg3' },
+      inclKey: { maint: 'cfg.pkg1i', sale: 'cfg.pkg2i', shield: 'cfg.pkg3i' }
+    };
+    var state = { size: 'mid', cond: 'normal', goal: 'shield' };
+
+    function ct(key, fallback) {
+      return (window.I18N && window.I18N.t(key)) || fallback || key;
+    }
+
+    function decimalComma() {
+      var l = (window.I18N && window.I18N.lang) || 'sv';
+      return !(l === 'en' || l === 'zh' || l === 'ko' || l === 'hi');
+    }
+
+    function formatPrice(n) {
+      /* 9995 -> "9 995" (hårt mellanslag som tusentalsavgränsare) */
+      return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    }
+
+    function pickTip() {
+      if (state.size === 'van') return 'cfg.tip3';
+      if (state.goal === 'shield') return 'cfg.tip2';
+      if (state.cond === 'worn') return 'cfg.tip1';
+      return 'cfg.tip4';
+    }
+
+    function renderCfg() {
+      var mul = CFG.sizeMul[state.size] * CFG.condMul[state.cond];
+      var price = Math.round((CFG.base[state.goal] * mul) / 5) * 5;
+      var hours = Math.round(CFG.hours[state.goal] * mul * 2) / 2;
+      var hoursStr = String(hours);
+      if (decimalComma()) hoursStr = hoursStr.replace('.', ',');
+
+      document.getElementById('cfg-pkg').textContent = ct(CFG.pkgKey[state.goal]);
+      document.getElementById('cfg-includes').textContent = ct(CFG.inclKey[state.goal]);
+      document.getElementById('cfg-price').textContent =
+        ct('cfg.from', 'från') + ' ' + formatPrice(price) + ' kr';
+      document.getElementById('cfg-time').textContent =
+        ct('cfg.timeAbout', 'ca') + ' ' + hoursStr + ' ' + ct('cfg.timeUnit', 'tim');
+      document.getElementById('cfg-tip').textContent = ct(pickTip());
+    }
+
+    cfgRoot.addEventListener('click', function (ev) {
+      var chip = ev.target.closest('.cfg-chip');
+      if (!chip) return;
+      var group = chip.parentElement.getAttribute('data-group');
+      state[group] = chip.getAttribute('data-value');
+      var chips = chip.parentElement.querySelectorAll('.cfg-chip');
+      for (var i = 0; i < chips.length; i++) {
+        var on = chips[i] === chip;
+        chips[i].classList.toggle('is-on', on);
+        chips[i].setAttribute('aria-pressed', String(on));
+      }
+      renderCfg();
+    });
+
+    /* Räkna om med rätt texter när språket byts */
+    document.addEventListener('glansverk:langchange', renderCfg);
+    renderCfg();
+  }
+
   /* ---------- Årtal i sidfoten ---------- */
   var year = document.getElementById('year');
   if (year) year.textContent = String(new Date().getFullYear());
