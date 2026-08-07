@@ -1,0 +1,13 @@
+{
+  "name": "verkstadsplanerare",
+  "version": "1.0.0",
+  "description": "Verkstadsplanerare för Ditec Sisjön – planera bilarna i verkstaden och SMS:a kunden när bilen är klar för leverans.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

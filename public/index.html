@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verkstadsplanerare – Ditec Sisjön</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9A%97%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1><span class="logo">DITEC</span> Sisjön · Verkstadsplanerare</h1>
+    <span id="smsModeBadge" class="badge-test" hidden>SMS: testläge</span>
+    <nav class="tabs">
+      <button class="tab active" data-view="aktiva">Aktiva</button>
+      <button class="tab" data-view="levererade">Levererade</button>
+    </nav>
+    <button id="newJobBtn" class="btn primary">+ Ny arbetsorder</button>
+  </header>
+
+  <main id="board" class="board"></main>
+
+  <div id="toasts"></div>
+
+  <!-- Ny arbetsorder / ändra -->
+  <dialog id="jobModal">
+    <form id="jobForm">
+      <h2 id="jobModalTitle">Ny arbetsorder</h2>
+      <input type="hidden" name="id">
+      <div class="grid">
+        <label>Reg.nr *<input name="regnr" required placeholder="ABC 123" autocomplete="off"></label>
+        <label>Bil<input name="car" placeholder="Volvo XC60" autocomplete="off"></label>
+        <label>Kund<input name="customer_name" placeholder="Anna Andersson" autocomplete="off"></label>
+        <label>Mobil<input name="phone" type="tel" placeholder="070-123 45 67" autocomplete="off"></label>
+        <label>Arbete<input name="service" placeholder="Ditec-behandling" autocomplete="off"></label>
+        <label>Datum<input name="date" type="date"></label>
+      </div>
+      <label>Anteckning<textarea name="note" rows="2"></textarea></label>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" data-close>Avbryt</button>
+        <button type="submit" class="btn primary">Spara</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Lev klar → SMS till kund -->
+  <dialog id="readyModal">
+    <div class="modal-body">
+      <h2 id="readyTitle">Lev klar</h2>
+      <p class="muted">SMS skickas till kundens mobil:</p>
+      <p class="ready-phone"><strong id="readyPhone"></strong></p>
+      <label class="muted" for="readyMsg">Meddelande (går att ändra innan det skickas)</label>
+      <textarea id="readyMsg" rows="4"></textarea>
+      <p id="readyTestNote" class="note-test" hidden>
+        Testläge: inga riktiga SMS skickas förrän 46elks-uppgifter lagts in i <code>.env</code> (se README).
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" data-close>Avbryt</button>
+        <button type="button" id="readySkipBtn" class="btn">Lev klar utan SMS</button>
+        <button type="button" id="readySendBtn" class="btn primary">Lev klar &amp; skicka SMS</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>
