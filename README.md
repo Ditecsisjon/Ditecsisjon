@@ -13,7 +13,7 @@ index.html          – hela sidan (svensk text som grund, märkt med data-i18n)
 css/styles.css      – design (färger/typsnitt i :root-tokens högst upp)
 js/i18n.js          – alla översättningar + språkväxlingen (13 språk)
 js/main.js          – meny, scrollanimationer, video, demoformulär
-assets/fonts/       – självhostade typsnitt (Barlow, OFL-licens – ingen Google-koppling)
+assets/fonts/       – självhostat typsnitt (Inter variabel, OFL-licens – ingen Google-koppling)
 ```
 
 Sidan är helt statisk – inga byggsteg, inga beroenden. Öppna `index.html` i en

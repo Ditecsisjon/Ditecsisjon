@@ -1,116 +1,60 @@
 /* =========================================================
    GLANSVERK – AI-plattform för bilvårdsföretag
-   Design: "Showroom & verkstad"
-   Mörk, glansig hero (lacken) → ljus, saklig kropp (hallen).
-   En accent: karminröd. Typografi: Barlow / Barlow Condensed.
+   Design: "Tesla/Apple" – ljus, luftig, monokrom med röd accent.
+   Svart hero → vit kropp, pillerknappar, kort utan kantlinjer.
+   Typografi: Inter (variabel), sentence case, tight spärrning.
    ========================================================= */
 
-/* ---------- Typsnitt (self-hostade, OFL-licens) ----------
-   latin täcker sv/en/da/fi/de/es/fr m.fl., latin-ext behövs för polska.
-   Ryska, arabiska, hindi, kinesiska och koreanska faller tillbaka på
+/* ---------- Typsnitt (Inter variabel, self-hostad, OFL) ----------
+   latin täcker sv/en/da/fi/de/es/fr, latin-ext polska, cyrillic ryska.
+   Arabiska, hindi, kinesiska och koreanska faller tillbaka på
    systemtypsnitt via unicode-range – webbläsaren laddar bara det som används. */
 @font-face {
-  font-family: 'Barlow';
+  font-family: 'Inter';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 700;
   font-display: swap;
-  src: url('../assets/fonts/barlow-400.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
+  src: url('../assets/fonts/inter-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: 'Barlow';
+  font-family: 'Inter';
   font-style: normal;
-  font-weight: 500;
+  font-weight: 400 700;
   font-display: swap;
-  src: url('../assets/fonts/barlow-500.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
+  src: url('../assets/fonts/inter-var-latinext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'Barlow';
+  font-family: 'Inter';
   font-style: normal;
-  font-weight: 700;
+  font-weight: 400 700;
   font-display: swap;
-  src: url('../assets/fonts/barlow-700.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
-}
-@font-face {
-  font-family: 'Barlow Condensed';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('../assets/fonts/barlow-condensed-600.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
-}
-@font-face {
-  font-family: 'Barlow Condensed';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('../assets/fonts/barlow-condensed-700.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
-}
-@font-face {
-  font-family: 'Barlow';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('../assets/fonts/barlow-400-latinext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113;
-}
-@font-face {
-  font-family: 'Barlow';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('../assets/fonts/barlow-500-latinext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113;
-}
-@font-face {
-  font-family: 'Barlow';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('../assets/fonts/barlow-700-latinext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113;
-}
-@font-face {
-  font-family: 'Barlow Condensed';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('../assets/fonts/barlow-condensed-600-latinext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113;
-}
-@font-face {
-  font-family: 'Barlow Condensed';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('../assets/fonts/barlow-condensed-700-latinext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113;
+  src: url('../assets/fonts/inter-var-cyr.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
 }
 
 /* ---------- Tokens ---------- */
 :root {
-  /* Mörk yta: petrolbruten grafit – lacken i skuggan */
-  --ink:      #10171a;
-  --ink-2:    #172024;
-  --ink-3:    #1e2a2f;
-  --ink-line: rgba(236, 244, 243, 0.12);
-  --ink-text: #edf3f2;
-  --ink-mute: #9aabac;
+  /* Mörk yta: rent svart – Apple "pro"-sektioner */
+  --ink:      #000000;
+  --ink-2:    #1d1d1f;
+  --ink-3:    #2c2c2e;
+  --ink-line: rgba(255, 255, 255, 0.16);
+  --ink-text: #f5f5f7;
+  --ink-mute: #86868b;
 
-  /* Ljus yta: porslin med kall petrolbrytning – ljushallen */
-  --paper:    #f1f4f4;
+  /* Ljus yta: vitt med ljusgrå paneler */
+  --paper:    #f5f5f7;
   --paper-2:  #ffffff;
-  --text:     #16242a;
-  --mute:     #566970;
-  --line:     #dde4e4;
+  --text:     #1d1d1f;
+  --mute:     #6e6e73;
+  --line:     #e8e8ed;
 
-  /* Accent: karminröd, lackerad */
-  --red:      #cf142f;
-  --red-deep: #a60f25;
-  --red-soft: rgba(207, 20, 47, 0.09);
+  /* Accent: röd – sparsam, som Teslas logotypröd */
+  --red:      #e82127;
+  --red-deep: #c21b20;
+  --red-soft: rgba(232, 33, 39, 0.08);
 
   /* Semantik (endast i produktmockups) */
   --ok:       #1d8a4e;
@@ -118,12 +62,12 @@
   --busy:     #b96a00;
   --busy-soft:rgba(185, 106, 0, 0.12);
 
-  --disp: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  --body: 'Barlow', 'Segoe UI', -apple-system, sans-serif;
+  --disp: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  --r-s: 8px;
-  --r-m: 12px;
-  --nav-h: 68px;
+  --r-s: 12px;
+  --r-m: 18px;
+  --nav-h: 64px;
 }
 
 /* ---------- Bas ---------- */
@@ -137,10 +81,11 @@ html {
 body {
   margin: 0;
   font-family: var(--body);
-  font-size: 16.5px;
-  line-height: 1.6;
+  font-size: 17px;
+  line-height: 1.55;
+  letter-spacing: -0.011em;
   color: var(--text);
-  background: var(--paper);
+  background: var(--paper-2);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -188,97 +133,93 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 .h-display {
   font-family: var(--disp);
   font-weight: 700;
-  text-transform: uppercase;
-  line-height: 0.94;
-  letter-spacing: 0.005em;
+  line-height: 1.05;
+  letter-spacing: -0.028em;
 }
 
-h1.h-display { font-size: clamp(46px, 7.4vw, 88px); }
-h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
+h1.h-display { font-size: clamp(40px, 5.8vw, 72px); }
+h2.h-display { font-size: clamp(30px, 4vw, 52px); }
 
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--mute);
-  margin: 0 0 18px;
+  color: var(--red);
+  margin: 0 0 16px;
 }
-.eyebrow::before {
-  content: '';
-  width: 22px;
-  height: 2px;
-  background: var(--red);
-  flex: none;
-}
-.sec--dark .eyebrow { color: var(--ink-mute); }
+.sec--dark .eyebrow { color: var(--red); }
 
 .lead {
-  font-size: clamp(17px, 2vw, 19.5px);
-  line-height: 1.65;
+  font-size: clamp(18px, 2vw, 21px);
+  line-height: 1.5;
+  letter-spacing: -0.014em;
   color: var(--mute);
-  max-width: 62ch;
+  max-width: 60ch;
 }
 .sec--dark .lead { color: var(--ink-mute); }
 
 .accent { color: var(--red); }
 
-/* ---------- Knappar ---------- */
+/* ---------- Knappar (piller, monokroma) ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 9px;
   font-family: var(--body);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.011em;
   text-decoration: none;
   border: 1px solid transparent;
-  border-radius: var(--r-s);
-  padding: 15px 26px;
+  border-radius: 980px;
+  padding: 13px 26px;
   cursor: pointer;
   transition: transform 0.15s ease, background-color 0.15s ease,
-              border-color 0.15s ease, color 0.15s ease;
+              border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
-.btn:active { transform: translateY(1px); }
+.btn:active { transform: scale(0.98); }
 
+/* På ljus yta: mörkt piller. På mörk yta (och i navigeringen): vitt piller. */
 .btn--primary {
-  background: var(--red);
+  background: var(--ink-2);
   color: #fff;
 }
-.btn--primary:hover { background: var(--red-deep); }
+.btn--primary:hover { background: #000; }
+.sec--dark .btn--primary,
+.nav .btn--primary {
+  background: #fff;
+  color: var(--ink-2);
+}
+.sec--dark .btn--primary:hover,
+.nav .btn--primary:hover { background: var(--ink-text); }
 
 .btn--ghost {
-  border-color: var(--ink-line);
+  border-color: rgba(255, 255, 255, 0.4);
   color: var(--ink-text);
   background: transparent;
 }
-.btn--ghost:hover { border-color: var(--ink-text); }
+.btn--ghost:hover { border-color: #fff; background: rgba(255, 255, 255, 0.06); }
 
 .btn--ghost-light {
-  border-color: #b9c4c4;
+  border-color: #c7c7cc;
   color: var(--text);
   background: transparent;
 }
 .btn--ghost-light:hover { border-color: var(--text); }
 
-.btn .btn-ico { width: 16px; height: 16px; flex: none; }
+.btn .btn-ico { width: 14px; height: 14px; flex: none; }
 
 /* ---------- Sektioner ---------- */
-.sec { padding-block: clamp(72px, 9vw, 112px); }
+.sec { padding-block: clamp(84px, 10vw, 128px); }
 .sec--dark {
-  background:
-    repeating-linear-gradient(115deg,
-      rgba(255, 255, 255, 0.016) 0 1px, transparent 1px 7px),
-    var(--ink);
+  background: var(--ink);
   color: var(--ink-text);
 }
-.sec--panel { background: var(--paper-2); }
+.sec--panel { background: var(--paper); }
 .sec-head { max-width: 720px; margin-bottom: clamp(36px, 5vw, 56px); }
 .sec-head .lead { margin-top: 16px; }
 
@@ -288,14 +229,14 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
   top: 0;
   z-index: 100;
   height: var(--nav-h);
-  background: rgba(16, 23, 26, 0.86);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   color: var(--ink-text);
   border-bottom: 1px solid transparent;
   transition: border-color 0.2s ease;
 }
-.nav.is-scrolled { border-bottom-color: var(--ink-line); }
+.nav.is-scrolled { border-bottom-color: rgba(255, 255, 255, 0.1); }
 
 .nav-inner {
   height: var(--nav-h);
@@ -315,26 +256,26 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
 .brand-name {
   font-family: var(--disp);
   font-weight: 700;
-  font-size: 19px;
-  letter-spacing: 0.14em;
+  font-size: 15px;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
 }
 
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 26px;
+  gap: 28px;
 }
 .nav-links a:not(.btn) {
-  font-size: 14.5px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--ink-mute);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: rgba(245, 245, 247, 0.8);
   text-decoration: none;
   transition: color 0.15s ease;
 }
-.nav-links a:not(.btn):hover { color: var(--ink-text); }
-.nav-links .btn { padding: 10px 18px; font-size: 13.5px; }
+.nav-links a:not(.btn):hover { color: #fff; }
+.nav-links .btn { padding: 8px 18px; font-size: 14px; }
 
 /* Språkväljare */
 .lang {
@@ -355,12 +296,12 @@ h2.h-display { font-size: clamp(34px, 4.6vw, 56px); }
   -webkit-appearance: none;
   font: inherit;
   font-size: 13.5px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--ink-text);
   background: transparent;
-  border: 1px solid var(--ink-line);
-  border-radius: var(--r-s);
-  padding: 8px 26px 8px 32px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 980px;
+  padding: 7px 26px 7px 32px;
   cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%239aabac' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -399,11 +340,11 @@ html[dir='rtl'] .lang select {
 .hero::before {
   content: '';
   position: absolute;
-  top: -240px;
-  right: -180px;
-  width: 720px;
-  height: 720px;
-  background: radial-gradient(closest-side, rgba(207, 20, 47, 0.16), transparent 70%);
+  top: -260px;
+  right: -160px;
+  width: 760px;
+  height: 760px;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.07), transparent 70%);
   pointer-events: none;
 }
 
@@ -478,9 +419,8 @@ html[dir='rtl'] .lang select {
   padding: 12px 16px;
   border-bottom: 1px solid var(--line);
   font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--mute);
 }
 .mock-bar .dots { display: flex; gap: 5px; margin-inline-end: 6px; }
@@ -648,8 +588,9 @@ html[dir='rtl'] .lang select {
   display: block;
   font-family: var(--disp);
   font-weight: 700;
-  font-size: clamp(34px, 3.6vw, 46px);
+  font-size: clamp(30px, 3.2vw, 42px);
   line-height: 1;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
 .stat span { display: block; margin-top: 6px; font-size: 14px; color: var(--ink-mute); }
@@ -658,29 +599,21 @@ html[dir='rtl'] .lang select {
 .pains {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
+  gap: 16px;
 }
 .pain {
   background: var(--paper);
-  padding: 26px 26px 30px;
+  border-radius: var(--r-m);
+  padding: 28px 28px 30px;
 }
 .pain h3 {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 19px;
+  font-weight: 600;
   line-height: 1.3;
+  letter-spacing: -0.02em;
   margin-bottom: 8px;
 }
-.pain h3::before {
-  content: '';
-  display: block;
-  width: 26px;
-  height: 3px;
-  background: var(--red);
-  margin-bottom: 14px;
-}
-.pain p { margin: 0; color: var(--mute); font-size: 15px; }
+.pain p { margin: 0; color: var(--mute); font-size: 15.5px; }
 
 .bridge {
   margin-top: clamp(32px, 4vw, 44px);
@@ -696,13 +629,12 @@ html[dir='rtl'] .lang select {
 .pillar-label {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   font-family: var(--disp);
   font-weight: 700;
   font-size: 22px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-bottom: 20px;
+  letter-spacing: -0.02em;
+  margin-bottom: 22px;
 }
 .pillar-label::after {
   content: '';
@@ -710,7 +642,7 @@ html[dir='rtl'] .lang select {
   background: var(--line);
   flex: 1;
 }
-.pillar-label em { font-style: normal; color: var(--red); }
+.pillar-label em { display: none; }
 
 .cards {
   display: grid;
@@ -719,34 +651,21 @@ html[dir='rtl'] .lang select {
 }
 .card {
   background: var(--paper-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-m);
-  padding: 24px 24px 22px;
+  padding: 26px 26px 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   overflow: hidden;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 .card:hover {
   transform: translateY(-4px);
-  border-color: #c8d2d2;
-  box-shadow: 0 18px 40px -22px rgba(22, 36, 42, 0.35);
+  box-shadow: 0 22px 44px -24px rgba(0, 0, 0, 0.22);
 }
-.card-ico {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  display: grid;
-  place-items: center;
-  color: var(--text);
-}
-.card-ico svg { width: 22px; height: 22px; }
 /* Produktbild (stiliserad mockup) – textfri SVG, fungerar på alla språk */
 .card-shot {
-  margin: -24px -24px 6px;
+  margin: -26px -26px 8px;
   border-bottom: 1px solid var(--line);
   background: var(--paper);
 }
@@ -754,40 +673,36 @@ html[dir='rtl'] .lang select {
 .card h3 {
   font-family: var(--disp);
   font-weight: 600;
-  font-size: 23px;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  font-size: 20px;
+  letter-spacing: -0.02em;
 }
-.card p { margin: 0; color: var(--mute); font-size: 15px; flex: 1; }
+.card p { margin: 0; color: var(--mute); font-size: 15.5px; flex: 1; }
 .chip {
   align-self: flex-start;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--red);
   background: var(--red-soft);
-  padding: 5px 11px;
-  border-radius: 4px;
+  padding: 6px 14px;
+  border-radius: 980px;
 }
 
 /* Dataloopen */
 .loop {
   margin-top: clamp(44px, 6vw, 64px);
-  border: 1px solid var(--line);
   border-radius: var(--r-m);
   background: var(--paper-2);
-  padding: clamp(24px, 3.5vw, 36px);
+  padding: clamp(28px, 3.5vw, 40px);
 }
 .loop h3 {
   font-family: var(--disp);
   font-weight: 700;
-  font-size: 26px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 25px;
+  letter-spacing: -0.022em;
   margin-bottom: 6px;
 }
-.loop > p { margin: 0 0 20px; color: var(--mute); max-width: 68ch; }
+.loop > p { margin: 0 0 22px; color: var(--mute); max-width: 68ch; }
 .loop-flow {
   display: flex;
   flex-wrap: wrap;
@@ -796,17 +711,16 @@ html[dir='rtl'] .lang select {
 }
 .loop-step {
   font-size: 14px;
-  font-weight: 700;
-  padding: 10px 16px;
-  border: 1px solid var(--line);
-  border-radius: 99px;
+  font-weight: 500;
+  padding: 10px 18px;
+  border-radius: 980px;
   background: var(--paper);
   white-space: nowrap;
 }
 .loop-step--ai {
   color: #fff;
+  font-weight: 600;
   background: var(--red);
-  border-color: var(--red);
 }
 .loop-arrow { color: #9fb0b0; flex: none; }
 .loop-arrow svg { width: 16px; height: 16px; }
@@ -821,10 +735,9 @@ html[dir='rtl'] .lang select {
 .cfg-steps { display: grid; gap: 26px; }
 .cfg-legend {
   margin: 0 0 10px;
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--mute);
 }
 .cfg-chips {
@@ -836,21 +749,20 @@ html[dir='rtl'] .lang select {
   font: inherit;
   font-size: 15px;
   font-weight: 500;
+  letter-spacing: -0.011em;
   color: var(--text);
-  background: var(--paper-2);
-  border: 1px solid #c9d3d3;
-  border-radius: 99px;
-  padding: 11px 20px;
+  background: var(--paper);
+  border: 1px solid transparent;
+  border-radius: 980px;
+  padding: 11px 22px;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease,
-              color 0.15s ease, transform 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
-.cfg-chip:hover { border-color: var(--text); transform: translateY(-1px); }
+.cfg-chip:hover { background: #e8e8ed; transform: translateY(-1px); }
 .cfg-chip.is-on {
-  background: var(--text);
-  border-color: var(--text);
+  background: var(--ink-2);
   color: #fff;
-  font-weight: 700;
+  font-weight: 600;
 }
 .cfg-steps .cfg-note {
   margin: 4px 0 0;
@@ -860,16 +772,14 @@ html[dir='rtl'] .lang select {
 }
 
 .cfg-result {
-  background: var(--paper-2);
-  border: 1px solid var(--line);
+  background: var(--paper);
   border-radius: var(--r-m);
-  padding: clamp(22px, 3vw, 30px);
-  box-shadow: 0 22px 48px -30px rgba(22, 36, 42, 0.35);
+  padding: clamp(24px, 3vw, 32px);
 }
 .cfg-result-label {
   margin: 0 0 6px;
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--red);
@@ -877,10 +787,9 @@ html[dir='rtl'] .lang select {
 .cfg-pkg {
   font-family: var(--disp);
   font-weight: 700;
-  font-size: clamp(26px, 3vw, 34px);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  line-height: 1.05;
+  font-size: clamp(24px, 2.6vw, 30px);
+  letter-spacing: -0.025em;
+  line-height: 1.1;
 }
 .cfg-includes {
   margin: 8px 0 0;
@@ -894,16 +803,15 @@ html[dir='rtl'] .lang select {
   margin-top: 18px;
 }
 .cfg-num {
-  border: 1px solid var(--line);
+  background: var(--paper-2);
   border-radius: var(--r-s);
-  padding: 12px 14px;
+  padding: 14px 16px;
 }
 .cfg-num span {
   display: block;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--mute);
 }
 .cfg-num b {
@@ -911,8 +819,9 @@ html[dir='rtl'] .lang select {
   margin-top: 3px;
   font-family: var(--disp);
   font-weight: 700;
-  font-size: clamp(22px, 2.6vw, 30px);
+  font-size: clamp(20px, 2.2vw, 26px);
   line-height: 1.05;
+  letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -968,9 +877,7 @@ html[lang='ar'] .cfg-ai .tag {
 .video-frame {
   position: relative;
   aspect-ratio: 16 / 9;
-  background:
-    radial-gradient(120% 120% at 20% 0%, var(--ink-3), var(--ink-2) 60%);
-  border: 1px solid var(--ink-line);
+  background: var(--ink-2);
   border-radius: var(--r-m);
   overflow: hidden;
   display: grid;
@@ -1028,25 +935,25 @@ html[dir='rtl'] .video-play svg { transform: scaleX(-1); }
 }
 .step {
   position: relative;
-  background: var(--paper-2);
-  border: 1px solid var(--line);
+  background: var(--paper);
   border-radius: var(--r-m);
-  padding: 26px 24px 24px;
+  padding: 30px 28px 28px;
 }
 .step::before {
   counter-increment: step;
-  content: counter(step, decimal-leading-zero);
+  content: counter(step);
   display: block;
   font-family: var(--disp);
   font-weight: 700;
-  font-size: 44px;
+  font-size: 36px;
   line-height: 1;
+  letter-spacing: -0.03em;
   color: var(--red);
   font-variant-numeric: tabular-nums;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
-.step h3 { font-size: 19px; font-weight: 700; margin-bottom: 8px; }
-.step p { margin: 0; color: var(--mute); font-size: 15px; }
+.step h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px; }
+.step p { margin: 0; color: var(--mute); font-size: 15.5px; }
 
 /* ---------- Resultat / Varför ---------- */
 .why {
@@ -1057,18 +964,9 @@ html[dir='rtl'] .video-play svg { transform: scaleX(-1); }
 .why h3 {
   font-family: var(--disp);
   font-weight: 700;
-  font-size: 27px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 24px;
+  letter-spacing: -0.022em;
   margin-bottom: 10px;
-}
-.why h3::before {
-  content: '';
-  display: block;
-  width: 30px;
-  height: 3px;
-  background: var(--red);
-  margin-bottom: 16px;
 }
 .why p { margin: 0; color: var(--mute); }
 
@@ -1134,10 +1032,9 @@ html[dir='rtl'] .video-play svg { transform: scaleX(-1); }
 }
 .field { display: grid; gap: 7px; }
 .field label {
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   color: var(--ink-mute);
 }
 .field input,
@@ -1253,8 +1150,9 @@ html[dir='rtl'] .video-play svg { transform: scaleX(-1); }
 .reveal.in { opacity: 1; transform: none; }
 
 /* ---------- Skriptspecifika justeringar ----------
-   Arabiska: sammanbunden skrift – inget teckenmellanrum, ingen kondenserad
-   versalsättning. CJK/devanagari: högre radhöjd så inga glyfer klipps. */
+   Arabiska: sammanbunden skrift – ingen (negativ) teckenspärrning alls.
+   CJK/devanagari: högre radhöjd så inga glyfer klipps. */
+html[lang='ar'] body { letter-spacing: 0; }
 html[lang='ar'] .h-display,
 html[lang='ar'] .eyebrow,
 html[lang='ar'] .btn,
