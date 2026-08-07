@@ -725,6 +725,7 @@ html[dir='rtl'] .lang select {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 .card:hover {
@@ -743,6 +744,13 @@ html[dir='rtl'] .lang select {
   color: var(--text);
 }
 .card-ico svg { width: 22px; height: 22px; }
+/* Produktbild (stiliserad mockup) – textfri SVG, fungerar på alla språk */
+.card-shot {
+  margin: -24px -24px 6px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+.card-shot svg { display: block; width: 100%; height: auto; }
 .card h3 {
   font-family: var(--disp);
   font-weight: 600;
